@@ -30,6 +30,7 @@ _ResultValue = TypeVar('_ResultValue')
 _StateValue = TypeVar('_StateValue')
 
 
+@final
 @dataclass(frozen=True, repr=False)
 class Result(Generic[_ResultValue, _StateValue]):
     value: Optional[_ResultValue] = field(default=None, kw_only=True)
@@ -41,18 +42,19 @@ class Result(Generic[_ResultValue, _StateValue]):
         return _repr(self.__class__.__name__, value=self.value, rule_name=self.rule_name, children=self.children or None)
 
     def with_rule_name(self, rule_name: str) -> 'Result[_ResultValue,_StateValue]':
-        return self.__class__(value=self.value, rule_name=rule_name, children=self.children)
+        return Result[_ResultValue, _StateValue](value=self.value, rule_name=rule_name, children=self.children)
 
     def as_child_result(self) -> 'Result[_ResultValue,_StateValue]':
-        return self.__class__(children=[self])
+        return Result[_ResultValue, _StateValue](children=[self])
 
     def simplify(self) -> 'Result[_ResultValue,_StateValue]':
         if self.value is None and self.rule_name is None and len(self.children) == 1:
             return self.children[0]
         else:
-            return self.__class__(value=self.value, rule_name=self.rule_name, children=[child.simplify() for child in self.children])
+            return Result[_ResultValue, _StateValue](value=self.value, rule_name=self.rule_name, children=[child.simplify() for child in self.children])
 
 
+@final
 @dataclass(frozen=True, repr=False)
 class State(Generic[_ResultValue, _StateValue]):
     processor: 'Processor[_ResultValue,_StateValue]'
@@ -62,7 +64,7 @@ class State(Generic[_ResultValue, _StateValue]):
         return _repr(self.__class__.__name__, value=self.value)
 
     def with_value(self, value: _StateValue) -> 'State[_ResultValue,_StateValue]':
-        return self.__class__(self.processor, value)
+        return State[_ResultValue, _StateValue](self.processor, value)
 
 
 @final
