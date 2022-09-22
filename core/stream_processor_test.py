@@ -6,7 +6,7 @@ from . import processor_test, stream_processor
 _Item = int
 _ResultValue = int
 
-_StateValue = stream_processor.StateValue[_Item]
+_StateValue = stream_processor.Stream[_Item]
 _Processor = stream_processor.Processor[_ResultValue, _Item]
 _Rule = stream_processor.Rule[_ResultValue, _Item]
 _Result = stream_processor.Result[_ResultValue, _Item]

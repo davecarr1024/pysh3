@@ -13,7 +13,7 @@ _Item = TypeVar('_Item')
 
 
 @dataclass(frozen=True)
-class StateValue(Generic[_Item]):
+class Stream(Generic[_Item]):
     _items: Sequence[_Item]
 
     def empty(self) -> bool:
@@ -24,27 +24,27 @@ class StateValue(Generic[_Item]):
             raise Error(msg=f'getting head from empty state {self}')
         return self._items[0]
 
-    def tail(self) -> 'StateValue[_Item]':
+    def tail(self) -> 'Stream[_Item]':
         if self.empty():
             raise Error(msg=f'getting tail from empty state {self}')
-        return StateValue[_Item](self._items[1:])
+        return Stream[_Item](self._items[1:])
 
 
-Result = processor.Result[_ResultValue, StateValue[_Item]]
-State = processor.State[_ResultValue, StateValue[_Item]]
-ResultAndState = processor.ResultAndState[_ResultValue, StateValue[_Item]]
-Rule = processor.Rule[_ResultValue, StateValue[_Item]]
-Processor = processor.Processor[_ResultValue, StateValue[_Item]]
-Ref = processor.Ref[_ResultValue, StateValue[_Item]]
-And = processor.And[_ResultValue, StateValue[_Item]]
-Or = processor.Or[_ResultValue, StateValue[_Item]]
-ZeroOrMore = processor.ZeroOrMore[_ResultValue, StateValue[_Item]]
-OneOrMore = processor.OneOrMore[_ResultValue, StateValue[_Item]]
-ZeroOrOne = processor.ZeroOrOne[_ResultValue, StateValue[_Item]]
+Result = processor.Result[_ResultValue, Stream[_Item]]
+State = processor.State[_ResultValue, Stream[_Item]]
+ResultAndState = processor.ResultAndState[_ResultValue, Stream[_Item]]
+Rule = processor.Rule[_ResultValue, Stream[_Item]]
+Processor = processor.Processor[_ResultValue, Stream[_Item]]
+Ref = processor.Ref[_ResultValue, Stream[_Item]]
+And = processor.And[_ResultValue, Stream[_Item]]
+Or = processor.Or[_ResultValue, Stream[_Item]]
+ZeroOrMore = processor.ZeroOrMore[_ResultValue, Stream[_Item]]
+OneOrMore = processor.OneOrMore[_ResultValue, Stream[_Item]]
+ZeroOrOne = processor.ZeroOrOne[_ResultValue, Stream[_Item]]
 
 
-class UntilEmpty(processor.While[_ResultValue, StateValue[_Item]]):
-    def cond(self, state_value: StateValue[_Item]) -> bool:
+class UntilEmpty(processor.While[_ResultValue, Stream[_Item]]):
+    def cond(self, state_value: Stream[_Item]) -> bool:
         return not state_value.empty()
 
 

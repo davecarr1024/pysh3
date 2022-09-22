@@ -15,7 +15,7 @@ class Char:
             raise Error(msg=f'invalid ResultValue value {self.value}')
 
 
-StateValue = stream_processor.StateValue[Char]
+StateValue = stream_processor.Stream[Char]
 State = stream_processor.State[Char, Char]
 Result = stream_processor.Result[Char, Char]
 ResultAndState = stream_processor.ResultAndState[Char, Char]
