@@ -138,6 +138,8 @@ class LessThanTest(_ProcessorTestCase):
 
     def test_apply(self):
         self.processor.apply_root_to_state_value(0)
+
+    def test_apply_fail(self):
         with self.assertRaises(processor.Error):
             self.processor.apply_root_to_state_value(1)
 
@@ -258,6 +260,8 @@ class OneOrMoreTest(_ProcessorTestCase):
                                  _Result(),
                                  _Result(),
                                  _Result(value=6)])]))
+
+    def test_apply_fail(self):
         with self.assertRaises(processor.Error):
             self.assertEqual(self.processor.apply_root_to_state_value(
                 10), _Result(rule_name='a'))

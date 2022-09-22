@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Generic, Mapping, MutableSequence, Optional, Sequence, TypeVar
+from typing import Any, Generic, Mapping, MutableSequence, Optional, Sequence, TypeVar, final
 
 
 def _repr(type: str, **fields: Any) -> str:
@@ -19,8 +19,11 @@ class Error(Exception):
     def __repr__(self) -> str:
         return _repr(self.__class__.__name__, msg=self.msg, rule_name=self.rule_name, children=self.children or None)
 
+    def __str__(self) -> str:
+        return repr(self)
+
     def with_rule_name(self, rule_name: str) -> 'Error':
-        return Error(msg=self.msg, rule_name=rule_name, children=self.children)
+        return self.__class__(msg=self.msg, rule_name=rule_name, children=self.children)
 
 
 _ResultValue = TypeVar('_ResultValue')
@@ -38,16 +41,16 @@ class Result(Generic[_ResultValue, _StateValue]):
         return _repr(self.__class__.__name__, value=self.value, rule_name=self.rule_name, children=self.children or None)
 
     def with_rule_name(self, rule_name: str) -> 'Result[_ResultValue,_StateValue]':
-        return Result[_ResultValue, _StateValue](value=self.value, rule_name=rule_name, children=self.children)
+        return self.__class__(value=self.value, rule_name=rule_name, children=self.children)
 
     def as_child_result(self) -> 'Result[_ResultValue,_StateValue]':
-        return Result[_ResultValue, _StateValue](children=[self])
+        return self.__class__(children=[self])
 
     def simplify(self) -> 'Result[_ResultValue,_StateValue]':
         if self.value is None and self.rule_name is None and len(self.children) == 1:
             return self.children[0]
         else:
-            return Result[_ResultValue, _StateValue](value=self.value, rule_name=self.rule_name, children=[child.simplify() for child in self.children])
+            return self.__class__(value=self.value, rule_name=self.rule_name, children=[child.simplify() for child in self.children])
 
 
 @dataclass(frozen=True, repr=False)
@@ -58,7 +61,11 @@ class State(Generic[_ResultValue, _StateValue]):
     def __repr__(self) -> str:
         return _repr(self.__class__.__name__, value=self.value)
 
+    def with_value(self, value: _StateValue) -> 'State[_ResultValue,_StateValue]':
+        return self.__class__(self.processor, value)
 
+
+@final
 @dataclass(frozen=True)
 class ResultAndState(Generic[_ResultValue, _StateValue]):
     result: Result[_ResultValue, _StateValue]
