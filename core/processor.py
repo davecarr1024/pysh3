@@ -91,7 +91,7 @@ class Processor(Generic[_ResultValue, _StateValue]):
         try:
             return self.rules[rule_name].apply(state).with_rule_name(rule_name).simplify()
         except Error as error:
-            raise Error(rule_name=rule_name, children=[error])
+            raise error.with_rule_name(rule_name)
 
     def apply_root_to_state(self, state: State[_ResultValue, _StateValue]) -> ResultAndState[_ResultValue, _StateValue]:
         return self.apply_rule_name_to_state(self.root_rule_name, state)
@@ -141,3 +141,73 @@ class Or(Rule[_ResultValue, _StateValue]):
             except Error as error:
                 child_errors.append(error)
         raise Error(children=child_errors)
+
+
+@dataclass(frozen=True)
+class ZeroOrMore(Rule[_ResultValue, _StateValue]):
+    child: Rule[_ResultValue, _StateValue]
+
+    def apply(self, state: State[_ResultValue, _StateValue]
+              ) -> ResultAndState[_ResultValue, _StateValue]:
+        child_results: MutableSequence[Result[_ResultValue, _StateValue]] = []
+        while True:
+            try:
+                child_result_and_state = self.child.apply(state)
+                child_results.append(child_result_and_state.result)
+                state = child_result_and_state.state
+            except Error:
+                return ResultAndState[_ResultValue, _StateValue](
+                    Result[_ResultValue, _StateValue](children=child_results), state)
+
+
+@dataclass(frozen=True)
+class OneOrMore(Rule[_ResultValue, _StateValue]):
+    child: Rule[_ResultValue, _StateValue]
+
+    def apply(self, state: State[_ResultValue, _StateValue]
+              ) -> ResultAndState[_ResultValue, _StateValue]:
+        try:
+            child_result_and_state = self.child.apply(state)
+            child_results: MutableSequence[Result[_ResultValue, _StateValue]] = [
+                child_result_and_state.result]
+            state = child_result_and_state.state
+        except Error as error:
+            raise Error(children=[error])
+        while True:
+            try:
+                child_result_and_state = self.child.apply(state)
+                child_results.append(child_result_and_state.result)
+                state = child_result_and_state.state
+            except Error:
+                break
+        return ResultAndState(Result(children=child_results), state)
+
+
+@dataclass(frozen=True)
+class ZeroOrOne(Rule[_ResultValue, _StateValue]):
+    child: Rule[_ResultValue, _StateValue]
+
+    def apply(self, state: State[_ResultValue, _StateValue]
+              ) -> ResultAndState[_ResultValue, _StateValue]:
+        try:
+            return self.child.apply(state).as_child_result()
+        except Error:
+            return ResultAndState[_ResultValue, _StateValue](Result[_ResultValue, _StateValue](), state)
+
+
+@dataclass(frozen=True)
+class While(Rule[_ResultValue, _StateValue], ABC):
+    child: Rule[_ResultValue, _StateValue]
+
+    @abstractmethod
+    def cond(self, state_value: _StateValue) -> bool: ...
+
+    def apply(self, state: State[_ResultValue, _StateValue]
+              ) -> ResultAndState[_ResultValue, _StateValue]:
+        child_results: MutableSequence[Result[_ResultValue, _StateValue]] = []
+        while self.cond(state.value):
+            child_result_and_state = self.child.apply(state)
+            child_results.append(child_result_and_state.result)
+            state = child_result_and_state.state
+        return ResultAndState[_ResultValue, _StateValue](
+            Result[_ResultValue, _StateValue](children=child_results), state)

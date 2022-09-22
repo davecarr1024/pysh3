@@ -13,6 +13,13 @@ _State = processor.State[int, int]
 _Ref = processor.Ref[int, int]
 _And = processor.And[int, int]
 _Or = processor.Or[int, int]
+_ZeroOrMore = processor.ZeroOrMore[int, int]
+_OneOrMore = processor.OneOrMore[int, int]
+_ZeroOrOne = processor.ZeroOrOne[int, int]
+
+if 'unittest.util' in __import__('sys').modules:
+    # Show full diff in self.assertEqual.
+    __import__('sys').modules['unittest.util']._MAX_LENGTH = 999999999
 
 
 class ErrorTest(unittest.TestCase):
@@ -89,19 +96,18 @@ class Multiply(_Rule):
         return _ResultAndState(_Result(value=state.value * self.value), state)
 
 
-@dataclass(frozen=True)
 class Increment(_Rule):
     def apply(self, state: _State) -> _ResultAndState:
         return _ResultAndState(_Result(), _State(state.processor, state.value+1))
 
 
 @dataclass(frozen=True)
-class Assert(_Rule):
+class LessThan(_Rule):
     value: int
 
     def apply(self, state: _State) -> _ResultAndState:
-        if state.value != self.value:
-            raise processor.Error(msg=f'{self.value} != {state.value}')
+        if state.value >= self.value:
+            raise processor.Error(msg=f'{self.value} >= {state.value}')
         return _ResultAndState(_Result(), state)
 
 
@@ -125,15 +131,15 @@ class IncrementTest(_ProcessorTestCase):
             self.state(1)).state.value, 2)
 
 
-class AssertTest(_ProcessorTestCase):
+class LessThanTest(_ProcessorTestCase):
     @property
     def processor(self) -> _Processor:
-        return _Processor('a', {'a': Assert(1)})
+        return _Processor('a', {'a': LessThan(1)})
 
     def test_apply(self):
-        self.processor.apply_root_to_state_value(1)
+        self.processor.apply_root_to_state_value(0)
         with self.assertRaises(processor.Error):
-            self.processor.apply_root_to_state_value(2)
+            self.processor.apply_root_to_state_value(1)
 
 
 class RefTest(_ProcessorTestCase):
@@ -174,12 +180,12 @@ class OrTest(_ProcessorTestCase):
             {
                 'a': _Or([
                     _And([
-                        Assert(2),
-                        Multiply(2),
+                        LessThan(3),
+                        Multiply(4),
                     ]),
                     _And([
-                        Assert(3),
-                        Multiply(3),
+                        LessThan(4),
+                        Multiply(5),
                     ]),
                 ]),
             }
@@ -188,7 +194,98 @@ class OrTest(_ProcessorTestCase):
     def test_apply(self):
         self.assertEqual(self.processor.apply_root_to_state_value(2),
                          _Result(rule_name='a', children=[
-                             _Result(children=[_Result(), _Result(value=4)])]))
+                             _Result(children=[_Result(), _Result(value=8)])]))
         self.assertEqual(self.processor.apply_root_to_state_value(3),
                          _Result(rule_name='a', children=[
-                             _Result(children=[_Result(), _Result(value=9)])]))
+                             _Result(children=[_Result(), _Result(value=15)])]))
+
+
+class ZeroOrMoreTest(_ProcessorTestCase):
+    @property
+    def processor(self) -> _Processor:
+        return _Processor(
+            'a',
+            {
+                'a': _ZeroOrMore(
+                    _And([
+                        LessThan(3),
+                        Increment(),
+                        Multiply(2),
+                    ]),
+                ),
+            }
+        )
+
+    def test_apply(self):
+        self.assertEqual(self.processor.apply_root_to_state_value(1),
+                         _Result(rule_name='a', children=[
+                             _Result(children=[
+                                     _Result(),
+                                     _Result(),
+                                     _Result(value=4)]),
+                             _Result(children=[
+                                 _Result(),
+                                 _Result(),
+                                 _Result(value=6)])]))
+        self.assertEqual(self.processor.apply_root_to_state_value(
+            10), _Result(rule_name='a'))
+
+
+class OneOrMoreTest(_ProcessorTestCase):
+    @property
+    def processor(self) -> _Processor:
+        return _Processor(
+            'a',
+            {
+                'a': _OneOrMore(
+                    _And([
+                        LessThan(3),
+                        Increment(),
+                        Multiply(2),
+                    ]),
+                ),
+            }
+        )
+
+    def test_apply(self):
+        self.assertEqual(self.processor.apply_root_to_state_value(1),
+                         _Result(rule_name='a', children=[
+                             _Result(children=[
+                                     _Result(),
+                                     _Result(),
+                                     _Result(value=4)]),
+                             _Result(children=[
+                                 _Result(),
+                                 _Result(),
+                                 _Result(value=6)])]))
+        with self.assertRaises(processor.Error):
+            self.assertEqual(self.processor.apply_root_to_state_value(
+                10), _Result(rule_name='a'))
+
+
+class ZeroOrOneTest(_ProcessorTestCase):
+    @property
+    def processor(self) -> _Processor:
+        return _Processor(
+            'a',
+            {
+                'a': _ZeroOrOne(
+                    _And([
+                        LessThan(3),
+                        Increment(),
+                        Multiply(2),
+                    ]),
+                ),
+            }
+        )
+
+    def test_apply(self):
+        self.assertEqual(self.processor.apply_root_to_state_value(1),
+                         _Result(rule_name='a', children=[
+                             _Result(children=[
+                                     _Result(),
+                                     _Result(),
+                                     _Result(value=4)]),
+                         ]))
+        self.assertEqual(self.processor.apply_root_to_state_value(
+            10), _Result(rule_name='a'))
