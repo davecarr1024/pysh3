@@ -15,9 +15,15 @@ class Char:
             raise Error(msg=f'invalid ResultValue value {self.value}')
 
 
-StateValue = stream_processor.Stream[Char]
+CharStream = stream_processor.Stream[Char]
+
+
+def load_char_stream(input: str) -> CharStream:
+    return CharStream([Char(c) for c in input])
+
+
 State = stream_processor.State[Char, Char]
-Result = stream_processor.Result[Char, Char]
+Result = stream_processor.Result[Char]
 ResultAndState = stream_processor.ResultAndState[Char, Char]
 Rule = stream_processor.Rule[Char, Char]
 Ref = stream_processor.Ref[Char, Char]
@@ -30,15 +36,16 @@ UntilEmpty = stream_processor.UntilEmpty[Char, Char]
 
 
 class Regex(stream_processor.Processor[Char, Char]):
-    def _flatten_values(self, result: Result) -> str:
+    @staticmethod
+    def flatten_values(result: Result) -> str:
         s = ''
         if result.value:
             s += result.value.value
-        return s + ''.join([self._flatten_values(child) for child in result.children])
+        return s + ''.join([Regex.flatten_values(child) for child in result.children])
 
     def apply(self, input: str) -> str:
         try:
-            return self._flatten_values(self.apply_root_to_state_value(StateValue([Char(c) for c in input])))
+            return self.flatten_values(self.apply_root_to_state_value(load_char_stream(input)))
         except stream_processor.Error as error:
             raise Error(msg=f'failed to apply regex {self} to input {repr(input)}',
                         children=[error])

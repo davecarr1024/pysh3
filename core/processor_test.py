@@ -6,7 +6,7 @@ from . import processor
 import unittest
 
 _Processor = processor.Processor[int, int]
-_Result = processor.Result[int, int]
+_Result = processor.Result[int]
 _ResultAndState = processor.ResultAndState[int, int]
 _Rule = processor.Rule[int, int]
 _State = processor.State[int, int]
@@ -43,16 +43,90 @@ class ResultTest(unittest.TestCase):
             _Result(children=[_Result(value=1)])
         )
 
+    def test_empty(self):
+        for input, expected in list[Tuple[_Result, bool]]([
+            (_Result(), True),
+            (_Result(children=[_Result()]), True),
+            (_Result(children=[_Result(children=[_Result()])]), True),
+        ]):
+            with self.subTest(input=input, expected=expected):
+                self.assertEqual(expected, input.empty())
+
     def test_simplify(self):
         for input, expected in list[Tuple[_Result, _Result]]([
             (_Result(value=1), _Result(value=1)),
             (_Result(rule_name='a'), _Result(rule_name='a')),
             (_Result(), _Result()),
+            (_Result(children=[_Result()]), _Result()),
+            (_Result(children=[_Result(children=[_Result()])]),
+             _Result(children=[_Result()])),
             (_Result(children=[_Result(value=1)]), _Result(value=1)),
         ]):
             with self.subTest(input=input, expected=expected):
                 actual = input.simplify()
                 self.assertEqual(expected, actual)
+
+    def test_merge_children(self):
+        self.assertEqual(
+            _Result.merge_children([
+                _Result(children=[_Result(value=1)]),
+                _Result(children=[_Result(value=2)]),
+            ]),
+            _Result(children=[_Result(value=1), _Result(value=2)])
+        )
+
+    def test_where_value_is(self):
+        self.assertEqual(
+            _Result(value=1).where(_Result.value_is(1)),
+            _Result(children=[_Result(value=1)])
+        )
+
+    def test_where_has_value(self):
+        self.assertEqual(
+            _Result(children=[_Result(value=1), _Result(
+                value=2), _Result()]).where(_Result.has_value),
+            _Result(children=[_Result(value=1), _Result(value=2)])
+        )
+
+    def test_where_rule_name_is(self):
+        self.assertEqual(
+            _Result(rule_name='a').where(_Result.rule_name_is('a')),
+            _Result(children=[_Result(rule_name='a')])
+        )
+
+    def test_all_values(self):
+        self.assertSequenceEqual(
+            _Result(children=[
+                _Result(children=[_Result(value=1), _Result(value=2)]),
+                _Result(value=3)
+            ]).all_values(),
+            [1, 2, 3]
+        )
+
+    def test_iter(self):
+        self.assertSequenceEqual(
+            [child for child in _Result(
+                children=[_Result(value=1), _Result(value=2)])],
+            [_Result(value=1), _Result(value=2)]
+        )
+
+    def test_getitem(self):
+        self.assertEqual(
+            _Result(children=[_Result(rule_name='a', value=1),
+                    _Result(rule_name='b', value=2)])['b'],
+            _Result(children=[_Result(rule_name='b', value=2)])
+        )
+
+    def test_len(self):
+        self.assertEqual(
+            len(_Result(children=[_Result(value=1), _Result(value=2)])),
+            2
+        )
+
+    def test_contains(self):
+        result = _Result(rule_name='a')
+        self.assertIn('a', result)
+        self.assertNotIn('b', result)
 
 
 _ResultValue = TypeVar('_ResultValue')
@@ -170,7 +244,7 @@ class AndTest(_ProcessorTestCase):
     def test_apply(self):
         self.assertEqual(
             self.processor.apply_root_to_state_value(3),
-            _Result(rule_name='a', children=[_Result(), _Result(value=8)])
+            _Result(rule_name='a', children=[_Result(value=8)])
         )
 
 
@@ -196,10 +270,10 @@ class OrTest(_ProcessorTestCase):
     def test_apply(self):
         self.assertEqual(self.processor.apply_root_to_state_value(2),
                          _Result(rule_name='a', children=[
-                             _Result(children=[_Result(), _Result(value=8)])]))
+                             _Result(children=[_Result(value=8)])]))
         self.assertEqual(self.processor.apply_root_to_state_value(3),
                          _Result(rule_name='a', children=[
-                             _Result(children=[_Result(), _Result(value=15)])]))
+                             _Result(children=[_Result(value=15)])]))
 
 
 class ZeroOrMoreTest(_ProcessorTestCase):
@@ -222,12 +296,8 @@ class ZeroOrMoreTest(_ProcessorTestCase):
         self.assertEqual(self.processor.apply_root_to_state_value(1),
                          _Result(rule_name='a', children=[
                              _Result(children=[
-                                     _Result(),
-                                     _Result(),
                                      _Result(value=4)]),
                              _Result(children=[
-                                 _Result(),
-                                 _Result(),
                                  _Result(value=6)])]))
         self.assertEqual(self.processor.apply_root_to_state_value(
             10), _Result(rule_name='a'))
@@ -253,12 +323,8 @@ class OneOrMoreTest(_ProcessorTestCase):
         self.assertEqual(self.processor.apply_root_to_state_value(1),
                          _Result(rule_name='a', children=[
                              _Result(children=[
-                                     _Result(),
-                                     _Result(),
                                      _Result(value=4)]),
                              _Result(children=[
-                                 _Result(),
-                                 _Result(),
                                  _Result(value=6)])]))
 
     def test_apply_fail(self):
@@ -287,8 +353,6 @@ class ZeroOrOneTest(_ProcessorTestCase):
         self.assertEqual(self.processor.apply_root_to_state_value(1),
                          _Result(rule_name='a', children=[
                              _Result(children=[
-                                     _Result(),
-                                     _Result(),
                                      _Result(value=4)]),
                          ]))
         self.assertEqual(self.processor.apply_root_to_state_value(

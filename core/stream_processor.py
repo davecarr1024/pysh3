@@ -30,7 +30,7 @@ class Stream(Generic[_Item]):
         return Stream[_Item](self._items[1:])
 
 
-Result = processor.Result[_ResultValue, Stream[_Item]]
+Result = processor.Result[_ResultValue]
 State = processor.State[_ResultValue, Stream[_Item]]
 ResultAndState = processor.ResultAndState[_ResultValue, Stream[_Item]]
 Rule = processor.Rule[_ResultValue, Stream[_Item]]
@@ -53,7 +53,7 @@ class HeadRule(Rule[_ResultValue, _Item], ABC):
     def pred(self, head: _Item) -> bool: ...
 
     @abstractmethod
-    def result(self, head: _Item) -> Result[_ResultValue, _Item]: ...
+    def result(self, head: _Item) -> Result[_ResultValue]: ...
 
     def apply(self, state: State[_ResultValue, _Item]) -> ResultAndState[_ResultValue, _Item]:
         if state.value.empty():

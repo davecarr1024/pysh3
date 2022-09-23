@@ -1,5 +1,7 @@
 import unittest
-from . import regex, processor_test
+
+from . import regex
+from . import processor_test
 
 
 class CharTest(unittest.TestCase):
@@ -13,7 +15,7 @@ class CharTest(unittest.TestCase):
             regex.Char('aa')
 
 
-_ProcessorTest = processor_test.ProcessorTestCase[regex.Char, regex.StateValue]
+_ProcessorTest = processor_test.ProcessorTestCase[regex.Char, regex.CharStream]
 
 
 class LiteralTest(_ProcessorTest):
