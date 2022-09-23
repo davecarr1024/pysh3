@@ -74,22 +74,36 @@ class Result(Generic[_ResultValue]):
             children=self.children or None,
         )
 
+    def __str__(self) -> str:
+        def _str(result: Result[_ResultValue], indent: int = 0) -> str:
+            output = f'{"  "*indent}'
+            if result.rule_name is not None:
+                output += result.rule_name
+            if result.value is not None:
+                output += f'({result.value})'
+            output += '\n'
+            for child in result.children:
+                output += _str(child, indent+1)
+            return output
+
+        return f'\n{_str(self)}'
+
     def with_rule_name(self, rule_name: str) -> 'Result[_ResultValue]':
-        '''Annotate this Result with a rule_name.'''
+        '''annotate this Result with a rule_name'''
         return Result[_ResultValue](value=self.value, rule_name=rule_name, children=self.children)
 
     def as_child_result(self) -> 'Result[_ResultValue]':
-        '''Nest this result in another result, allowing it to be annotated.'''
+        '''nest this result in another result, allowing it to be annotated'''
         return Result[_ResultValue](children=[self])
 
     def empty(self) -> bool:
-        '''Is this a trivial result.'''
+        '''is this a trivial result'''
         return (self.value is None
                 and self.rule_name is None
                 and all(child.empty() for child in self.children))
 
     def simplify(self) -> 'Result[_ResultValue]':
-        '''Remove trivial results from this result.'''
+        '''remove trivial results from this result'''
         if self.value is None and self.rule_name is None and len(self.children) == 1:
             return self.children[0]
         return Result[_ResultValue](

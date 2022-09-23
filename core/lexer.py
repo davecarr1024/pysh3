@@ -1,7 +1,8 @@
 '''lexer splits an input stream in a stream of tokens'''
 
 from dataclasses import dataclass
-from typing import FrozenSet, Mapping, MutableSequence
+import string
+from typing import Container, FrozenSet, Mapping, MutableSequence
 from . import stream_processor
 
 
@@ -127,6 +128,24 @@ class Lexer(stream_processor.Processor[Char, Char]):
             raise Error(
                 msg=f'failed to apply regex {self} to input {repr(input_str)}',
                 children=[error]) from error
+
+
+@dataclass(frozen=True)
+class Class(stream_processor.HeadRule[Char, Char]):
+    '''lex rule matching range of chars'''
+
+    values: Container[str]
+
+    def pred(self, head: Char) -> bool:
+        return head.value in self.values
+
+    def result(self, head: Char) -> Result:
+        return Result(value=head)
+
+    @staticmethod
+    def whitespace() -> 'Class':
+        '''a class for matching whitespace chars'''
+        return Class(string.whitespace)
 
 
 @dataclass(frozen=True)
