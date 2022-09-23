@@ -371,6 +371,8 @@ class AndTest(_ProcessorTestCase):
 
 
 class OrTest(_ProcessorTestCase):
+    '''tests for processor.Or'''
+
     @property
     def processor(self) -> _Processor:
         return _Processor(
@@ -390,6 +392,7 @@ class OrTest(_ProcessorTestCase):
         )
 
     def test_apply(self):
+        '''tests for processor.Or.apply'''
         self.assertEqual(self.processor.apply_root_to_state_value(2),
                          _Result(rule_name='a', children=[
                              _Result(children=[_Result(value=8)])]))
@@ -399,6 +402,7 @@ class OrTest(_ProcessorTestCase):
 
 
 class ZeroOrMoreTest(_ProcessorTestCase):
+    '''tests for processor.ZeroOrMore'''
     @property
     def processor(self) -> _Processor:
         return _Processor(
@@ -415,6 +419,7 @@ class ZeroOrMoreTest(_ProcessorTestCase):
         )
 
     def test_apply(self):
+        '''tests for processor.ZeroOrMore.apply'''
         self.assertEqual(self.processor.apply_root_to_state_value(1),
                          _Result(rule_name='a', children=[
                              _Result(children=[
@@ -426,6 +431,8 @@ class ZeroOrMoreTest(_ProcessorTestCase):
 
 
 class OneOrMoreTest(_ProcessorTestCase):
+    '''tests for processor.OneOrMore'''
+
     @property
     def processor(self) -> _Processor:
         return _Processor(
@@ -442,6 +449,7 @@ class OneOrMoreTest(_ProcessorTestCase):
         )
 
     def test_apply(self):
+        '''tests for processor.OneOrMore.apply'''
         self.assertEqual(self.processor.apply_root_to_state_value(1),
                          _Result(rule_name='a', children=[
                              _Result(children=[
@@ -450,12 +458,15 @@ class OneOrMoreTest(_ProcessorTestCase):
                                  _Result(value=6)])]))
 
     def test_apply_fail(self):
+        '''tests for processor.OneOrMore.apply failures'''
         with self.assertRaises(processor.Error):
             self.assertEqual(self.processor.apply_root_to_state_value(
                 10), _Result(rule_name='a'))
 
 
 class ZeroOrOneTest(_ProcessorTestCase):
+    '''tests for processor.ZeroOrOne'''
+
     @property
     def processor(self) -> _Processor:
         return _Processor(
@@ -472,6 +483,7 @@ class ZeroOrOneTest(_ProcessorTestCase):
         )
 
     def test_apply(self):
+        '''tests for processor.ZeroOrOne.apply'''
         self.assertEqual(self.processor.apply_root_to_state_value(1),
                          _Result(rule_name='a', children=[
                              _Result(children=[
