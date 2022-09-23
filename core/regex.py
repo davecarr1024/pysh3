@@ -36,19 +36,13 @@ UntilEmpty = stream_processor.UntilEmpty[Char, Char]
 
 
 class Regex(stream_processor.Processor[Char, Char]):
-    @staticmethod
-    def flatten_values(result: Result) -> str:
-        s = ''
-        if result.value:
-            s += result.value.value
-        return s + ''.join([Regex.flatten_values(child) for child in result.children])
-
     def apply(self, input: str) -> str:
         try:
-            return self.flatten_values(self.apply_root_to_state_value(load_char_stream(input)))
+            result = self.apply_root_to_state_value(load_char_stream(input))
         except stream_processor.Error as error:
             raise Error(msg=f'failed to apply regex {self} to input {repr(input)}',
                         children=[error])
+        return ''.join([value.value for value in result.all_values()])
 
 
 class Literal(stream_processor.Literal[Char, Char]):
