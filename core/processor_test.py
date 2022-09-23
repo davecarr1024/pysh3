@@ -270,7 +270,7 @@ class _Multiply(_Rule):
         return _ResultAndState(_Result(value=state.value * self.value), state)
 
 
-class _Increment(_Rule):
+class _Increment(_Rule):  # pylint: disable=too-few-public-methods
     def apply(self, state: _State) -> _ResultAndState:
         return _ResultAndState(
             _Result(),

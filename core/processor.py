@@ -226,7 +226,7 @@ class ResultAndState(Generic[_ResultValue, _StateValue]):
         return ResultAndState[_ResultValue, _StateValue](self.result.simplify(), self.state)
 
 
-class Rule(Generic[_ResultValue, _StateValue], ABC):
+class Rule(Generic[_ResultValue, _StateValue], ABC):  # pylint: disable=too-few-public-methods
     '''interface for all processor rules'''
 
     @abstractmethod
