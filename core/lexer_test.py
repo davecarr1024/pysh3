@@ -1,3 +1,5 @@
+'''tests for lexer module'''
+
 from typing import Tuple
 import unittest
 
@@ -5,10 +7,14 @@ from . import lexer, stream_processor_test
 
 
 class CharTest(unittest.TestCase):
+    '''tests for lexer.Char'''
+
     def test_ctor(self):
+        '''test that lexer.Char ctor accepts one char'''
         lexer.Char('a', lexer.Position(0, 0))
 
     def test_ctor_fail(self):
+        '''test that lexer.Char fails with invalid values'''
         with self.assertRaises(lexer.Error):
             lexer.Char('', lexer.Position(0, 0))
         with self.assertRaises(lexer.Error):
@@ -19,7 +25,9 @@ _StreamProcessorTestCase = stream_processor_test.StreamProcessorTestCase[
     lexer.Char, lexer.Char]
 
 
-class LiteralTest(_StreamProcessorTestCase):
+class LexerTest(_StreamProcessorTestCase):
+    '''tests for lexer.Lexer'''
+
     @property
     def processor(self) -> lexer.Lexer:
         return lexer.Lexer.build({
@@ -29,10 +37,12 @@ class LiteralTest(_StreamProcessorTestCase):
             'd': lexer.And([lexer.Literal('d'), lexer.ZeroOrMore(lexer.Literal('D'))]),
             'e': lexer.And([lexer.Literal('e'), lexer.ZeroOrOne(lexer.Literal('E'))]),
             'f': lexer.OneOrMore(lexer.Literal('f')),
+            '_g': lexer.Literal('g'),
         })
 
     def test_apply(self):
-        for input, expected in list[Tuple[str, lexer.TokenStream]]([
+        '''test successful apply cases'''
+        for input_str, expected in list[Tuple[str, lexer.TokenStream]]([
             (
                 'a',
                 lexer.TokenStream([
@@ -109,11 +119,21 @@ class LiteralTest(_StreamProcessorTestCase):
                                 position=lexer.Position(0, 0)),
                 ])
             ),
+            (
+                'aga',
+                lexer.TokenStream([
+                    lexer.Token(rule_name='a', value='a',
+                                position=lexer.Position(0, 0)),
+                    lexer.Token(rule_name='a', value='a',
+                                position=lexer.Position(0, 2)),
+                ])
+            ),
         ]):
-            with self.subTest(input=input, expected=expected):
-                actual = self.processor.apply(input)
+            with self.subTest(input=input_str, expected=expected):
+                actual = self.processor.apply(input_str)
                 self.assertEqual(expected, actual)
 
     def test_apply_fail(self):
+        '''test failing apply cases'''
         with self.assertRaises(lexer.Error):
             self.processor.apply('z')

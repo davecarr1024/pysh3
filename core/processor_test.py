@@ -1,4 +1,4 @@
-from abc import ABC, abstractproperty
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Generic, Tuple, TypeVar
 from . import processor
@@ -19,7 +19,10 @@ _ZeroOrOne = processor.ZeroOrOne[int, int]
 
 if 'unittest.util' in __import__('sys').modules:
     # Show full diff in self.assertEqual.
-    __import__('sys').modules['unittest.util']._MAX_LENGTH = 999999999
+    # pylint: disable=protected-access
+    __import__(
+        'sys').modules['unittest.util']._MAX_LENGTH = 999999999
+    # pylint: enable=protected-access
 
 
 class ErrorTest(unittest.TestCase):
@@ -44,16 +47,16 @@ class ResultTest(unittest.TestCase):
         )
 
     def test_empty(self):
-        for input, expected in list[Tuple[_Result, bool]]([
+        for result, expected in list[Tuple[_Result, bool]]([
             (_Result(), True),
             (_Result(children=[_Result()]), True),
             (_Result(children=[_Result(children=[_Result()])]), True),
         ]):
-            with self.subTest(input=input, expected=expected):
-                self.assertEqual(expected, input.empty())
+            with self.subTest(input=result, expected=expected):
+                self.assertEqual(expected, result.empty())
 
     def test_simplify(self):
-        for input, expected in list[Tuple[_Result, _Result]]([
+        for result, expected in list[Tuple[_Result, _Result]]([
             (_Result(value=1), _Result(value=1)),
             (_Result(rule_name='a'), _Result(rule_name='a')),
             (_Result(), _Result()),
@@ -62,8 +65,8 @@ class ResultTest(unittest.TestCase):
              _Result(children=[_Result()])),
             (_Result(children=[_Result(value=1)]), _Result(value=1)),
         ]):
-            with self.subTest(input=input, expected=expected):
-                actual = input.simplify()
+            with self.subTest(input=result, expected=expected):
+                actual = result.simplify()
                 self.assertEqual(expected, actual)
 
     def test_merge_children(self):
@@ -188,7 +191,8 @@ class ProcessorTestCase(Generic[_ResultValue, _StateValue], ABC, unittest.TestCa
     def state(self, state_value: _StateValue) -> processor.State[_ResultValue, _StateValue]:
         return processor.State[_ResultValue, _StateValue](self.processor, state_value)
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def processor(self) -> processor.Processor[_ResultValue, _StateValue]: ...
 
 

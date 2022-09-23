@@ -82,11 +82,11 @@ class UntilEmptyTest(_StreamProcessorTestCase):
         )
 
     def test_apply_fail(self):
-        for input in list[Sequence[int]]([
+        for values in list[Sequence[int]]([
             [1, 1, 1, 2],
             [2],
         ]):
-            with self.subTest(input=input):
+            with self.subTest(input=values):
                 with self.assertRaises(stream_processor.Error):
                     self.processor.apply_root_to_state_value(
-                        _Stream(input))
+                        _Stream(values))

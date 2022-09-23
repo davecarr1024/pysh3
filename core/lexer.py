@@ -1,3 +1,5 @@
+'''lexer splits an input stream in a stream of tokens'''
+
 from dataclasses import dataclass
 from typing import FrozenSet, Mapping, MutableSequence, Type
 from . import stream_processor
@@ -8,14 +10,16 @@ Error = stream_processor.Error
 
 @dataclass(frozen=True)
 class Position:
+    '''the position of a token in a input document'''
+
     line: int
     column: int
 
-    def __add__(self, s: str) -> 'Position':
+    def __add__(self, input_str: str) -> 'Position':
         line = self.line
         column = self.column
-        for c in s:
-            if c == '\n':
+        for char in input_str:
+            if char == '\n':
                 line += 1
                 column = 0
             else:
@@ -25,6 +29,8 @@ class Position:
 
 @dataclass(frozen=True)
 class Char:
+    '''one char in an incoming doc'''
+
     value: str
     position: Position
 
@@ -60,6 +66,7 @@ UntilEmpty = stream_processor.UntilEmpty[Char, Char]
 
 _ROOT_RULE_NAME = '_root'
 _TOKEN_RULE_NAME = '_token'
+EXCLUDE_NAME_PREFIX = '_'
 
 
 @dataclass(frozen=True)
@@ -83,10 +90,10 @@ class Lexer(stream_processor.Processor[Char, Char]):
         )
 
     @staticmethod
-    def convert_input(input: str) -> CharStream:
+    def convert_input(input_str: str) -> CharStream:
         chars: MutableSequence[Char] = []
         position = Position(0, 0)
-        for c in input:
+        for c in input_str:
             chars.append(Char(c, position))
             position += c
         return CharStream(chars)
@@ -102,15 +109,16 @@ class Lexer(stream_processor.Processor[Char, Char]):
                 Result.has_value) if char.value]
             value = ''.join(char.value for char in chars)
             assert value
-            tokens.append(Token(rule_name, value, chars[0].position))
+            if not rule_name.startswith(EXCLUDE_NAME_PREFIX):
+                tokens.append(Token(rule_name, value, chars[0].position))
         return TokenStream(tokens)
 
-    def apply(self, input: str) -> TokenStream:
+    def apply(self, input_str: str) -> TokenStream:
         try:
-            return self.convert_result(self.apply_root_to_state_value(self.convert_input(input)))
+            return self.convert_result(self.apply_root_to_state_value(self.convert_input(input_str)))
         except stream_processor.Error as error:
-            raise Error(msg=f'failed to apply regex {self} to input {repr(input)}',
-                        children=[error])
+            raise Error(msg=f'failed to apply regex {self} to input {repr(input_str)}',
+                        children=[error]) from error
 
 
 @dataclass(frozen=True)

@@ -3,10 +3,10 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Container, Generic, Iterator, Mapping, MutableSequence, Optional, Sequence, Type, TypeVar, final
 
 
-def _repr(type: str, **fields: Any) -> str:
+def _repr(class_name: str, **fields: Any) -> str:
     fields_str = ','.join(
         [f'{name}={repr(val)}' for name, val in fields.items() if val is not None])
-    return f'{type}({fields_str})'
+    return f'{class_name}({fields_str})'
 
 
 @dataclass(frozen=True, repr=False)
@@ -14,7 +14,7 @@ class Error(Exception):
     msg: Optional[str] = field(kw_only=True, default=None)
     rule_name: Optional[str] = field(kw_only=True, default=None)
     children: Sequence['Error'] = field(
-        kw_only=True, default_factory=lambda: list[Error]())
+        kw_only=True, default_factory=list)
 
     def __repr__(self) -> str:
         return _repr(self.__class__.__name__, msg=self.msg, rule_name=self.rule_name, children=self.children or None)
@@ -36,7 +36,7 @@ class Result(Generic[_ResultValue]):
     value: Optional[_ResultValue] = field(default=None, kw_only=True)
     rule_name: Optional[str] = field(kw_only=True, default=None)
     children: Sequence['Result[_ResultValue]'] = field(
-        kw_only=True, default_factory=lambda: list[Result[_ResultValue]]())
+        kw_only=True, default_factory=lambda: list[Result[_ResultValue]]())  # pylint: disable=unnecessary-lambda
 
     def __repr__(self) -> str:
         return _repr(self.__class__.__name__, value=self.value, rule_name=self.rule_name, children=self.children or None)
@@ -207,7 +207,7 @@ class And(Rule[_ResultValue, _StateValue]):
                 child_results.append(child_result_and_state.result)
                 child_state = child_result_and_state.state
             except Error as error:
-                raise Error(children=[error])
+                raise Error(children=[error]) from error
         return ResultAndState[_ResultValue, _StateValue](Result[_ResultValue](children=child_results), child_state)
 
 
@@ -255,7 +255,7 @@ class OneOrMore(Rule[_ResultValue, _StateValue]):
                 child_result_and_state.result]
             state = child_result_and_state.state
         except Error as error:
-            raise Error(children=[error])
+            raise Error(children=[error]) from error
         while True:
             try:
                 child_result_and_state = self.child.apply(state)
