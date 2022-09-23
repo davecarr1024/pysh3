@@ -1,3 +1,5 @@
+'''generic processor for streaming input'''
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Iterable, Iterator, Sequence, TypeVar
@@ -12,6 +14,8 @@ _Item = TypeVar('_Item')
 
 @dataclass(frozen=True)
 class Stream(Iterable[_Item]):
+    '''generic stream of incoming input items'''
+
     _items: Sequence[_Item]
 
     def __iter__(self) -> Iterator[_Item]:
@@ -20,21 +24,28 @@ class Stream(Iterable[_Item]):
     def __len__(self) -> int:
         return len(self._items)
 
+    @property
     def empty(self) -> bool:
+        '''is this stream empty'''
         return len(self) == 0
 
+    @property
     def head(self) -> _Item:
-        if self.empty():
+        '''the first value in the stream'''
+        if self.empty:
             raise Error(msg=f'getting head from empty state {self}')
         return self._items[0]
 
+    @property
     def tail(self) -> 'Stream[_Item]':
-        if self.empty():
+        '''all but the first value in the stream'''
+        if self.empty:
             raise Error(msg=f'getting tail from empty state {self}')
         return Stream[_Item](self._items[1:])
 
     @staticmethod
     def from_result(result: processor.Result[_Item]) -> 'Stream[_Item]':
+        '''convert all results in the given result to a stream'''
         return Stream[_Item](result.all_values())
 
 
@@ -52,31 +63,44 @@ ZeroOrOne = processor.ZeroOrOne[_ResultValue, Stream[_Item]]
 
 
 class UntilEmpty(processor.While[_ResultValue, Stream[_Item]]):
+    '''rule for processing items from the input stream until empty'''
+
     def cond(self, state_value: Stream[_Item]) -> bool:
-        return not state_value.empty()
+        return not state_value.empty
 
 
 class HeadRule(Rule[_ResultValue, _Item], ABC):
-    @abstractmethod
-    def pred(self, head: _Item) -> bool: ...
+    '''generic rule for operating on the head value of a stream'''
 
     @abstractmethod
-    def result(self, head: _Item) -> Result[_ResultValue]: ...
+    def pred(self, head: _Item) -> bool:
+        '''only process the head value if this is true'''
+
+    @abstractmethod
+    def result(self, head: _Item) -> Result[_ResultValue]:
+        '''convert the head value to a Result'''
 
     def apply(self, state: State[_ResultValue, _Item]) -> ResultAndState[_ResultValue, _Item]:
-        if state.value.empty():
+        '''process the head value and return the result'''
+        if state.value.empty:
             raise Error(
                 msg=f'unable to apply head rule {self} to empty state {state}')
-        head: _Item = state.value.head()
+        head: _Item = state.value.head
         if not self.pred(head):
             raise Error(
                 msg=f'failed pred for head rule {self} with head {head}')
-        return ResultAndState[_ResultValue, _Item](self.result(head), state.with_value(state.value.tail()))
+        return ResultAndState[_ResultValue, _Item](
+            self.result(head),
+            state.with_value(state.value.tail)
+        )
 
 
 @dataclass(frozen=True)
 class Literal(HeadRule[_ResultValue, _Item]):
+    '''generic rule for matching the head of the stream to a given value'''
+
     value: _Item
 
     def pred(self, head: _Item) -> bool:
+        '''returns true if the stream head matches the given value'''
         return head == self.value
