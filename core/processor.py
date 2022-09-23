@@ -86,17 +86,16 @@ class Result(Generic[_ResultValue]):
         '''Is this a trivial result.'''
         return (self.value is None
                 and self.rule_name is None
-                and all([child.empty() for child in self.children]))
+                and all(child.empty() for child in self.children))
 
     def simplify(self) -> 'Result[_ResultValue]':
         '''Remove trivial results from this result.'''
         if self.value is None and self.rule_name is None and len(self.children) == 1:
             return self.children[0]
-        else:
-            return Result[_ResultValue](
-                value=self.value,
-                rule_name=self.rule_name,
-                children=[child.simplify() for child in self.children if not child.empty()])
+        return Result[_ResultValue](
+            value=self.value,
+            rule_name=self.rule_name,
+            children=[child.simplify() for child in self.children if not child.empty()])
 
     @staticmethod
     def merge_children(results: Sequence['Result[_ResultValue]']) -> 'Result[_ResultValue]':

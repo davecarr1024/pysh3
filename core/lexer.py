@@ -1,7 +1,7 @@
 '''lexer splits an input stream in a stream of tokens'''
 
 from dataclasses import dataclass
-from typing import FrozenSet, Mapping, MutableSequence, Type
+from typing import FrozenSet, Mapping, MutableSequence
 from . import stream_processor
 
 
@@ -78,10 +78,6 @@ class Lexer(stream_processor.Processor[Char, Char]):
     _rule_names: FrozenSet[str]
 
     @staticmethod
-    def error_type() -> Type[Error]:
-        return Error
-
-    @staticmethod
     def build(rules: Mapping[str, Rule]) -> 'Lexer':
         '''build a Lexer from a given set of rules'''
         return Lexer(
@@ -92,7 +88,7 @@ class Lexer(stream_processor.Processor[Char, Char]):
                     Ref(rule_name)
                     for rule_name in rules.keys()
                 ]),
-                **{rule_name: rule for rule_name, rule in rules.items()}
+                **rules
             },
             frozenset(rules.keys()),
         )

@@ -183,8 +183,8 @@ class ResultTest(unittest.TestCase):
     def test_iter(self):
         '''verify result children are iterable'''
         self.assertSequenceEqual(
-            [child for child in _Result(
-                children=[_Result(value=1), _Result(value=2)])],
+            list(_Result(
+                children=[_Result(value=1), _Result(value=2)])),
             [_Result(value=1), _Result(value=2)]
         )
 
