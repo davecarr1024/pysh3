@@ -44,6 +44,8 @@ CharStream = stream_processor.Stream[Char]
 
 @dataclass(frozen=True)
 class Token:
+    '''one item in an input document'''
+
     rule_name: str
     value: str
     position: Position
@@ -71,6 +73,8 @@ EXCLUDE_NAME_PREFIX = '_'
 
 @dataclass(frozen=True)
 class Lexer(stream_processor.Processor[Char, Char]):
+    '''Lexer splits an incoming string into tokens'''
+
     _rule_names: FrozenSet[str]
 
     @staticmethod
@@ -79,6 +83,7 @@ class Lexer(stream_processor.Processor[Char, Char]):
 
     @staticmethod
     def build(rules: Mapping[str, Rule]) -> 'Lexer':
+        '''build a Lexer from a given set of rules'''
         return Lexer(
             '_root',
             {
@@ -90,15 +95,15 @@ class Lexer(stream_processor.Processor[Char, Char]):
         )
 
     @staticmethod
-    def convert_input(input_str: str) -> CharStream:
+    def _convert_input(input_str: str) -> CharStream:
         chars: MutableSequence[Char] = []
         position = Position(0, 0)
-        for c in input_str:
-            chars.append(Char(c, position))
-            position += c
+        for char in input_str:
+            chars.append(Char(char, position))
+            position += char
         return CharStream(chars)
 
-    def convert_result(self, result: Result) -> TokenStream:
+    def _convert_result(self, result: Result) -> TokenStream:
         tokens: MutableSequence[Token] = []
         for token_result in result[_TOKEN_RULE_NAME]:
             rule_result = token_result.where_one(
@@ -114,8 +119,11 @@ class Lexer(stream_processor.Processor[Char, Char]):
         return TokenStream(tokens)
 
     def apply(self, input_str: str) -> TokenStream:
+        '''split an input str into a token stream according to a set of lex rules'''
         try:
-            return self.convert_result(self.apply_root_to_state_value(self.convert_input(input_str)))
+            return self._convert_result(
+                self.apply_root_to_state_value(
+                    self._convert_input(input_str)))
         except stream_processor.Error as error:
             raise Error(msg=f'failed to apply regex {self} to input {repr(input_str)}',
                         children=[error]) from error
@@ -123,6 +131,8 @@ class Lexer(stream_processor.Processor[Char, Char]):
 
 @dataclass(frozen=True)
 class Literal(stream_processor.HeadRule[Char, Char]):
+    '''lex rule matching a given char'''
+
     value: str
 
     def __post_init__(self):
