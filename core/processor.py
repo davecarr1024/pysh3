@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Callable, Generic, Iterator, Mapping, MutableSequence, Optional, Sequence, TypeVar, final
+from typing import Any, Callable, Container, Generic, Iterator, Mapping, MutableSequence, Optional, Sequence, Type, TypeVar, final
 
 
 def _repr(type: str, **fields: Any) -> str:
@@ -83,13 +83,19 @@ class Result(Generic[_ResultValue]):
             raise Error(msg=f'expected {n} results got {len(result.children)}')
         return result
 
-    def where_one(self, cond: Callable[['Result[_ResultValue]'], bool], n: int) -> 'Result[_ResultValue]':
-        return self.where_n(cond, 1)
+    def where_one(self, cond: Callable[['Result[_ResultValue]'], bool]) -> 'Result[_ResultValue]':
+        return self.where_n(cond, 1).children[0]
 
     @staticmethod
     def rule_name_is(rule_name: str) -> Callable[['Result[_ResultValue]'], bool]:
         def closure(result: Result[_ResultValue]) -> bool:
             return result.rule_name == rule_name
+        return closure
+
+    @staticmethod
+    def rule_name_in(rule_names: Container[str]) -> Callable[['Result[_ResultValue]'], bool]:
+        def closure(result: Result[_ResultValue]) -> bool:
+            return result.rule_name in rule_names
         return closure
 
     @staticmethod
@@ -118,8 +124,8 @@ class Result(Generic[_ResultValue]):
         return len(self[rule_name]) > 0
 
 
-@ final
-@ dataclass(frozen=True, repr=False)
+@final
+@dataclass(frozen=True, repr=False)
 class State(Generic[_ResultValue, _StateValue]):
     processor: 'Processor[_ResultValue,_StateValue]'
     value: _StateValue
@@ -131,8 +137,8 @@ class State(Generic[_ResultValue, _StateValue]):
         return State[_ResultValue, _StateValue](self.processor, value)
 
 
-@ final
-@ dataclass(frozen=True)
+@final
+@dataclass(frozen=True)
 class ResultAndState(Generic[_ResultValue, _StateValue]):
     result: Result[_ResultValue]
     state: State[_ResultValue, _StateValue]
@@ -148,15 +154,19 @@ class ResultAndState(Generic[_ResultValue, _StateValue]):
 
 
 class Rule(Generic[_ResultValue, _StateValue], ABC):
-    @ abstractmethod
+    @abstractmethod
     def apply(self, state: State[_ResultValue, _StateValue]
               ) -> ResultAndState[_ResultValue, _StateValue]: ...
 
 
-@ dataclass(frozen=True)
+@dataclass(frozen=True)
 class Processor(Generic[_ResultValue, _StateValue]):
     root_rule_name: str
     rules: Mapping[str, Rule[_ResultValue, _StateValue]]
+
+    @staticmethod
+    def error_type() -> Type[Error]:
+        return Error
 
     def apply_rule_name_to_state(self, rule_name: str, state: State[_ResultValue, _StateValue]) -> ResultAndState[_ResultValue, _StateValue]:
         if rule_name not in self.rules:
@@ -174,7 +184,7 @@ class Processor(Generic[_ResultValue, _StateValue]):
             State[_ResultValue, _StateValue](self, state_value)).result
 
 
-@ dataclass(frozen=True)
+@dataclass(frozen=True)
 class Ref(Rule[_ResultValue, _StateValue]):
     value: str
 
@@ -183,7 +193,7 @@ class Ref(Rule[_ResultValue, _StateValue]):
         return state.processor.apply_rule_name_to_state(self.value, state).as_child_result()
 
 
-@ dataclass(frozen=True)
+@dataclass(frozen=True)
 class And(Rule[_ResultValue, _StateValue]):
     children: Sequence[Rule[_ResultValue, _StateValue]]
 
@@ -201,7 +211,7 @@ class And(Rule[_ResultValue, _StateValue]):
         return ResultAndState[_ResultValue, _StateValue](Result[_ResultValue](children=child_results), child_state)
 
 
-@ dataclass(frozen=True)
+@dataclass(frozen=True)
 class Or(Rule[_ResultValue, _StateValue]):
     children: Sequence[Rule[_ResultValue, _StateValue]]
 
@@ -216,7 +226,7 @@ class Or(Rule[_ResultValue, _StateValue]):
         raise Error(children=child_errors)
 
 
-@ dataclass(frozen=True)
+@dataclass(frozen=True)
 class ZeroOrMore(Rule[_ResultValue, _StateValue]):
     child: Rule[_ResultValue, _StateValue]
 
@@ -233,7 +243,7 @@ class ZeroOrMore(Rule[_ResultValue, _StateValue]):
                     Result[_ResultValue](children=child_results), state)
 
 
-@ dataclass(frozen=True)
+@dataclass(frozen=True)
 class OneOrMore(Rule[_ResultValue, _StateValue]):
     child: Rule[_ResultValue, _StateValue]
 
@@ -256,7 +266,7 @@ class OneOrMore(Rule[_ResultValue, _StateValue]):
         return ResultAndState(Result(children=child_results), state)
 
 
-@ dataclass(frozen=True)
+@dataclass(frozen=True)
 class ZeroOrOne(Rule[_ResultValue, _StateValue]):
     child: Rule[_ResultValue, _StateValue]
 
@@ -268,11 +278,11 @@ class ZeroOrOne(Rule[_ResultValue, _StateValue]):
             return ResultAndState[_ResultValue, _StateValue](Result[_ResultValue](), state)
 
 
-@ dataclass(frozen=True)
+@dataclass(frozen=True)
 class While(Rule[_ResultValue, _StateValue], ABC):
     child: Rule[_ResultValue, _StateValue]
 
-    @ abstractmethod
+    @abstractmethod
     def cond(self, state_value: _StateValue) -> bool: ...
 
     def apply(self, state: State[_ResultValue, _StateValue]

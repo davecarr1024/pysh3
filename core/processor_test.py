@@ -94,6 +94,57 @@ class ResultTest(unittest.TestCase):
             _Result(children=[_Result(rule_name='a')])
         )
 
+    def test_where_rule_name_in(self):
+        self.assertEqual(
+            _Result(rule_name='a').where(_Result.rule_name_in(('a', 'b'))),
+            _Result(children=[_Result(rule_name='a')])
+        )
+
+    def test_where_n(self):
+        self.assertEqual(
+            _Result(children=[
+                _Result(rule_name='a', value=1),
+                _Result(rule_name='a', value=2),
+                _Result(rule_name='b', value=3),
+            ]).where_n(_Result.rule_name_is('a'), 2),
+            _Result(children=[
+                _Result(rule_name='a', value=1),
+                _Result(rule_name='a', value=2),
+            ])
+        )
+
+    def test_where_n_empty(self):
+        with self.assertRaises(processor.Error):
+            _Result(children=[]).where_n(_Result.rule_name_is('a'), 2)
+
+    def test_where_n_too_many(self):
+        with self.assertRaises(processor.Error):
+            _Result(children=[
+                _Result(rule_name='a', value=1),
+                _Result(rule_name='a', value=2),
+                _Result(rule_name='a', value=3),
+            ]).where_n(_Result.rule_name_is('a'), 2)
+
+    def test_where_one(self):
+        self.assertEqual(
+            _Result(children=[
+                _Result(rule_name='a', value=1),
+                _Result(rule_name='b', value=2),
+            ]).where_one(_Result.rule_name_is('a')),
+            _Result(rule_name='a', value=1)
+        )
+
+    def test_where_one_empty(self):
+        with self.assertRaises(processor.Error):
+            _Result(children=[]).where_one(_Result.rule_name_is('a'))
+
+    def test_where_one_too_many(self):
+        with self.assertRaises(processor.Error):
+            _Result(children=[
+                _Result(rule_name='a', value=1),
+                _Result(rule_name='a', value=2),
+            ]).where_one(_Result.rule_name_is('a'))
+
     def test_all_values(self):
         self.assertSequenceEqual(
             _Result(children=[

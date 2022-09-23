@@ -1,23 +1,27 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Generic, Sequence, TypeVar
+from typing import Iterable, Iterator, Sequence, TypeVar
 from . import processor
 
 
-class Error(processor.Error):
-    pass
-
+Error = processor.Error
 
 _ResultValue = TypeVar('_ResultValue')
 _Item = TypeVar('_Item')
 
 
 @dataclass(frozen=True)
-class Stream(Generic[_Item]):
+class Stream(Iterable[_Item]):
     _items: Sequence[_Item]
 
+    def __iter__(self) -> Iterator[_Item]:
+        return iter(self._items)
+
+    def __len__(self) -> int:
+        return len(self._items)
+
     def empty(self) -> bool:
-        return not self._items
+        return len(self) == 0
 
     def head(self) -> _Item:
         if self.empty():
@@ -28,6 +32,10 @@ class Stream(Generic[_Item]):
         if self.empty():
             raise Error(msg=f'getting tail from empty state {self}')
         return Stream[_Item](self._items[1:])
+
+    @staticmethod
+    def from_result(result: processor.Result[_Item]) -> 'Stream[_Item]':
+        return Stream[_Item](result.all_values())
 
 
 Result = processor.Result[_ResultValue]
