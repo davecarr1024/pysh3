@@ -1,3 +1,5 @@
+'''generic rule-based processor'''
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any, Callable, Container, Generic, Iterator, Mapping, MutableSequence, Optional, Sequence, Type, TypeVar, final

@@ -88,7 +88,10 @@ class Lexer(stream_processor.Processor[Char, Char]):
             '_root',
             {
                 _ROOT_RULE_NAME: UntilEmpty(Ref(_TOKEN_RULE_NAME)),
-                _TOKEN_RULE_NAME: Or([Ref(rule_name) for rule_name in rules.keys()]),
+                _TOKEN_RULE_NAME: Or([
+                    Ref(rule_name)
+                    for rule_name in rules.keys()
+                ]),
                 **{rule_name: rule for rule_name, rule in rules.items()}
             },
             frozenset(rules.keys()),
@@ -119,14 +122,15 @@ class Lexer(stream_processor.Processor[Char, Char]):
         return TokenStream(tokens)
 
     def apply(self, input_str: str) -> TokenStream:
-        '''split an input str into a token stream according to a set of lex rules'''
+        '''split an input str into a tokens'''
         try:
             return self._convert_result(
                 self.apply_root_to_state_value(
                     self._convert_input(input_str)))
         except stream_processor.Error as error:
-            raise Error(msg=f'failed to apply regex {self} to input {repr(input_str)}',
-                        children=[error]) from error
+            raise Error(
+                msg=f'failed to apply regex {self} to input {repr(input_str)}',
+                children=[error]) from error
 
 
 @dataclass(frozen=True)

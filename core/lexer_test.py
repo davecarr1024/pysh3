@@ -34,8 +34,14 @@ class LexerTest(_StreamProcessorTestCase):
             'a': lexer.Literal('a'),
             'b': lexer.And([lexer.Literal('b'), lexer.Literal('b')]),
             'c': lexer.Or([lexer.Literal('c'), lexer.Literal('C')]),
-            'd': lexer.And([lexer.Literal('d'), lexer.ZeroOrMore(lexer.Literal('D'))]),
-            'e': lexer.And([lexer.Literal('e'), lexer.ZeroOrOne(lexer.Literal('E'))]),
+            'd': lexer.And([
+                lexer.Literal('d'),
+                lexer.ZeroOrMore(lexer.Literal('D')),
+            ]),
+            'e': lexer.And([
+                lexer.Literal('e'),
+                lexer.ZeroOrOne(lexer.Literal('E')),
+            ]),
             'f': lexer.OneOrMore(lexer.Literal('f')),
             '_g': lexer.Literal('g'),
         })

@@ -1,9 +1,11 @@
+'''tests for processor'''
+
+import unittest
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Generic, Tuple, TypeVar
 from . import processor
-
-import unittest
 
 _Processor = processor.Processor[int, int]
 _Result = processor.Result[int]
@@ -26,7 +28,10 @@ if 'unittest.util' in __import__('sys').modules:
 
 
 class ErrorTest(unittest.TestCase):
+    '''tests for processor.Error'''
+
     def test_with_rule_name(self):
+        '''test for processor.Error.with_rule_name'''
         self.assertEqual(
             processor.Error(rule_name='a'),
             processor.Error().with_rule_name('a')
@@ -34,19 +39,24 @@ class ErrorTest(unittest.TestCase):
 
 
 class ResultTest(unittest.TestCase):
+    '''tests for processor.Result'''
+
     def test_with_rule_name(self):
+        '''tests for processor.Result.with_rule_name'''
         self.assertEqual(
             _Result(rule_name='a'),
             _Result().with_rule_name('a'),
         )
 
     def test_as_child_result(self):
+        '''tests for processor.Result.as_child_result'''
         self.assertEqual(
             _Result(value=1).as_child_result(),
             _Result(children=[_Result(value=1)])
         )
 
     def test_empty(self):
+        '''tests for processor.Result.empty'''
         for result, expected in list[Tuple[_Result, bool]]([
             (_Result(), True),
             (_Result(children=[_Result()]), True),
@@ -56,6 +66,7 @@ class ResultTest(unittest.TestCase):
                 self.assertEqual(expected, result.empty())
 
     def test_simplify(self):
+        '''tests for processor.Result.simplify'''
         for result, expected in list[Tuple[_Result, _Result]]([
             (_Result(value=1), _Result(value=1)),
             (_Result(rule_name='a'), _Result(rule_name='a')),
@@ -70,6 +81,7 @@ class ResultTest(unittest.TestCase):
                 self.assertEqual(expected, actual)
 
     def test_merge_children(self):
+        '''tests for processor.Result.merge_children'''
         self.assertEqual(
             _Result.merge_children([
                 _Result(children=[_Result(value=1)]),
@@ -79,12 +91,14 @@ class ResultTest(unittest.TestCase):
         )
 
     def test_where_value_is(self):
+        '''tests for processor.Result.where with value_is'''
         self.assertEqual(
             _Result(value=1).where(_Result.value_is(1)),
             _Result(children=[_Result(value=1)])
         )
 
     def test_where_has_value(self):
+        '''tests for processor.Result.where with has_value'''
         self.assertEqual(
             _Result(children=[_Result(value=1), _Result(
                 value=2), _Result()]).where(_Result.has_value),
@@ -92,18 +106,21 @@ class ResultTest(unittest.TestCase):
         )
 
     def test_where_rule_name_is(self):
+        '''tests for processor.Result.where with rule_name_is'''
         self.assertEqual(
             _Result(rule_name='a').where(_Result.rule_name_is('a')),
             _Result(children=[_Result(rule_name='a')])
         )
 
     def test_where_rule_name_in(self):
+        '''tests for processor.Result.where with rule_name_in'''
         self.assertEqual(
             _Result(rule_name='a').where(_Result.rule_name_in(('a', 'b'))),
             _Result(children=[_Result(rule_name='a')])
         )
 
     def test_where_n(self):
+        '''verify where_n returns n matching results'''
         self.assertEqual(
             _Result(children=[
                 _Result(rule_name='a', value=1),
@@ -117,10 +134,12 @@ class ResultTest(unittest.TestCase):
         )
 
     def test_where_n_empty(self):
+        '''where_n returns error when there aren't enough matching results'''
         with self.assertRaises(processor.Error):
             _Result(children=[]).where_n(_Result.rule_name_is('a'), 2)
 
     def test_where_n_too_many(self):
+        '''where_n returns error when there are too many matching results'''
         with self.assertRaises(processor.Error):
             _Result(children=[
                 _Result(rule_name='a', value=1),
@@ -129,6 +148,7 @@ class ResultTest(unittest.TestCase):
             ]).where_n(_Result.rule_name_is('a'), 2)
 
     def test_where_one(self):
+        '''where one returns exactly one matching result (not nested)'''
         self.assertEqual(
             _Result(children=[
                 _Result(rule_name='a', value=1),
@@ -138,10 +158,12 @@ class ResultTest(unittest.TestCase):
         )
 
     def test_where_one_empty(self):
+        '''where_one fails on empty input'''
         with self.assertRaises(processor.Error):
             _Result(children=[]).where_one(_Result.rule_name_is('a'))
 
     def test_where_one_too_many(self):
+        '''where_one fails on too many matches'''
         with self.assertRaises(processor.Error):
             _Result(children=[
                 _Result(rule_name='a', value=1),
@@ -149,6 +171,7 @@ class ResultTest(unittest.TestCase):
             ]).where_one(_Result.rule_name_is('a'))
 
     def test_all_values(self):
+        '''all_values returns all values in result tree'''
         self.assertSequenceEqual(
             _Result(children=[
                 _Result(children=[_Result(value=1), _Result(value=2)]),
@@ -158,6 +181,7 @@ class ResultTest(unittest.TestCase):
         )
 
     def test_iter(self):
+        '''verify result children are iterable'''
         self.assertSequenceEqual(
             [child for child in _Result(
                 children=[_Result(value=1), _Result(value=2)])],
@@ -165,6 +189,7 @@ class ResultTest(unittest.TestCase):
         )
 
     def test_getitem(self):
+        '''result[foo] returns all children of rule_name=foo'''
         self.assertEqual(
             _Result(children=[_Result(rule_name='a', value=1),
                     _Result(rule_name='b', value=2)])['b'],
@@ -172,12 +197,14 @@ class ResultTest(unittest.TestCase):
         )
 
     def test_len(self):
+        '''len return length of result children'''
         self.assertEqual(
             len(_Result(children=[_Result(value=1), _Result(value=2)])),
             2
         )
 
     def test_contains(self):
+        '''in returns if any child has the given rule_name'''
         result = _Result(rule_name='a')
         self.assertIn('a', result)
         self.assertNotIn('b', result)
@@ -187,30 +214,48 @@ _ResultValue = TypeVar('_ResultValue')
 _StateValue = TypeVar('_StateValue')
 
 
-class ProcessorTestCase(Generic[_ResultValue, _StateValue], ABC, unittest.TestCase):
-    def state(self, state_value: _StateValue) -> processor.State[_ResultValue, _StateValue]:
-        return processor.State[_ResultValue, _StateValue](self.processor, state_value)
+class ProcessorTestCase(
+    Generic[_ResultValue, _StateValue],
+    ABC,
+    unittest.TestCase,
+):
+    '''generic processor test case'''
+
+    def state(
+        self,
+        state_value: _StateValue
+    ) -> processor.State[_ResultValue, _StateValue]:
+        '''create a state with this test's processor'''
+        return processor.State[_ResultValue, _StateValue](
+            self.processor,
+            state_value
+        )
 
     @property
     @abstractmethod
-    def processor(self) -> processor.Processor[_ResultValue, _StateValue]: ...
+    def processor(self) -> processor.Processor[_ResultValue, _StateValue]:
+        '''the generic processor to be used for all tests'''
 
 
 _ProcessorTestCase = ProcessorTestCase[int, int]
 
 
 class ResultAndStateTest(_ProcessorTestCase):
+    '''tests for processor.ResultAndState'''
+
     @property
     def processor(self) -> _Processor:
         return _Processor('', {})
 
     def test_with_rule_name(self):
+        '''test for processor.ResultAndState.with_rule_name'''
         self.assertEqual(
             _ResultAndState(_Result(), self.state(0)).with_rule_name('a'),
             _ResultAndState(_Result(rule_name='a'), self.state(0))
         )
 
     def test_as_child_result(self):
+        '''test for processor.ResultAndState.as_child_result'''
         self.assertEqual(
             _ResultAndState(_Result(value=1), self.state(0)).as_child_result(),
             _ResultAndState(_Result(value=1).as_child_result(), self.state(0))
@@ -218,20 +263,26 @@ class ResultAndStateTest(_ProcessorTestCase):
 
 
 @dataclass(frozen=True)
-class Multiply(_Rule):
+class _Multiply(_Rule):
     value: int
 
     def apply(self, state: _State) -> _ResultAndState:
         return _ResultAndState(_Result(value=state.value * self.value), state)
 
 
-class Increment(_Rule):
+class _Increment(_Rule):
     def apply(self, state: _State) -> _ResultAndState:
-        return _ResultAndState(_Result(), _State(state.processor, state.value+1))
+        return _ResultAndState(
+            _Result(),
+            _State(
+                state.processor,
+                state.value+1
+            )
+        )
 
 
 @dataclass(frozen=True)
-class LessThan(_Rule):
+class _LessThan(_Rule):
     value: int
 
     def apply(self, state: _State) -> _ResultAndState:
@@ -241,62 +292,78 @@ class LessThan(_Rule):
 
 
 class MultiplyTest(_ProcessorTestCase):
+    '''test behavior of _Multiply rule'''
+
     @property
     def processor(self) -> _Processor:
-        return _Processor('a', {'a': Multiply(2)})
+        return _Processor('a', {'a': _Multiply(2)})
 
     def test_apply(self):
+        '''test _Multiply.apply multiplies state by result'''
         self.assertEqual(self.processor.apply_root_to_state_value(3),
                          _Result(value=6, rule_name='a'))
 
 
 class IncrementTest(_ProcessorTestCase):
+    '''test for _Increment'''
     @property
     def processor(self) -> _Processor:
-        return _Processor('a', {'a': Increment()})
+        return _Processor('a', {'a': _Increment()})
 
     def test_apply(self):
+        '''_Increment.apply increments state'''
         self.assertEqual(self.processor.apply_root_to_state(
             self.state(1)).state.value, 2)
 
 
 class LessThanTest(_ProcessorTestCase):
+    '''test for _LessThan rule'''
+
     @property
     def processor(self) -> _Processor:
-        return _Processor('a', {'a': LessThan(1)})
+        return _Processor('a', {'a': _LessThan(1)})
 
     def test_apply(self):
+        '''apply verifies state < value'''
         self.processor.apply_root_to_state_value(0)
 
     def test_apply_fail(self):
+        '''apply fails when state >= value'''
         with self.assertRaises(processor.Error):
             self.processor.apply_root_to_state_value(1)
 
 
 class RefTest(_ProcessorTestCase):
+    '''tests for processor.Ref'''
     @property
     def processor(self) -> _Processor:
-        return _Processor('a', {'a': _Ref('b'), 'b': Multiply(2)})
+        return _Processor('a', {'a': _Ref('b'), 'b': _Multiply(2)})
 
     def test_apply(self):
-        self.assertEqual(self.processor.apply_root_to_state_value(3),
-                         _Result(rule_name='a', children=[_Result(rule_name='b', value=6)]))
+        '''apply looks up a rule and applies it'''
+        self.assertEqual(
+            self.processor.apply_root_to_state_value(3),
+            _Result(rule_name='a', children=[_Result(rule_name='b', value=6)])
+        )
 
 
 class AndTest(_ProcessorTestCase):
+    '''tests for processor.And'''
+
     @property
     def processor(self) -> _Processor:
         return _Processor(
             'a',
             {
                 'a': _And([
-                    Increment(),
-                    Multiply(2),
+                    _Increment(),
+                    _Multiply(2),
                 ]),
             }
         )
 
     def test_apply(self):
+        '''apply applies all rules in sequence'''
         self.assertEqual(
             self.processor.apply_root_to_state_value(3),
             _Result(rule_name='a', children=[_Result(value=8)])
@@ -311,12 +378,12 @@ class OrTest(_ProcessorTestCase):
             {
                 'a': _Or([
                     _And([
-                        LessThan(3),
-                        Multiply(4),
+                        _LessThan(3),
+                        _Multiply(4),
                     ]),
                     _And([
-                        LessThan(4),
-                        Multiply(5),
+                        _LessThan(4),
+                        _Multiply(5),
                     ]),
                 ]),
             }
@@ -339,9 +406,9 @@ class ZeroOrMoreTest(_ProcessorTestCase):
             {
                 'a': _ZeroOrMore(
                     _And([
-                        LessThan(3),
-                        Increment(),
-                        Multiply(2),
+                        _LessThan(3),
+                        _Increment(),
+                        _Multiply(2),
                     ]),
                 ),
             }
@@ -366,9 +433,9 @@ class OneOrMoreTest(_ProcessorTestCase):
             {
                 'a': _OneOrMore(
                     _And([
-                        LessThan(3),
-                        Increment(),
-                        Multiply(2),
+                        _LessThan(3),
+                        _Increment(),
+                        _Multiply(2),
                     ]),
                 ),
             }
@@ -396,9 +463,9 @@ class ZeroOrOneTest(_ProcessorTestCase):
             {
                 'a': _ZeroOrOne(
                     _And([
-                        LessThan(3),
-                        Increment(),
-                        Multiply(2),
+                        _LessThan(3),
+                        _Increment(),
+                        _Multiply(2),
                     ]),
                 ),
             }
