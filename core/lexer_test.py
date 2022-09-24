@@ -47,6 +47,8 @@ class LexerTest(_StreamProcessorTestCase):
             'f': lexer.OneOrMore(lexer.Literal('f')),
             '_g': lexer.Literal('g'),
             'int': lexer.OneOrMore(lexer.Class(string.digits)),
+            'h': lexer.And([lexer.Literal('h'), lexer.Not(lexer.Literal('h'))]),
+            'i': lexer.And([lexer.Literal('i'), lexer.Any()]),
         }))
 
     def test_apply(self):
@@ -143,7 +145,21 @@ class LexerTest(_StreamProcessorTestCase):
                     lexer.Token(rule_name='int', value='123',
                                 position=lexer.Position(0, 0)),
                 ])
-            )
+            ),
+            (
+                'hz',
+                lexer.TokenStream([
+                    lexer.Token(rule_name='h', value='hz',
+                                position=lexer.Position(0, 0)),
+                ])
+            ),
+            (
+                'iz',
+                lexer.TokenStream([
+                    lexer.Token(rule_name='i', value='iz',
+                                position=lexer.Position(0, 0)),
+                ])
+            ),
         ]):
             with self.subTest(input=input_str, expected=expected):
                 actual = self.processor.apply(input_str)
@@ -151,5 +167,11 @@ class LexerTest(_StreamProcessorTestCase):
 
     def test_apply_fail(self):
         '''test failing apply cases'''
-        with self.assertRaises(lexer.Error):
-            self.processor.apply('z')
+        for input_str in list[str]([
+            'z',
+            'hh',
+            'i',
+        ]):
+            with self.subTest(input_str=input_str):
+                with self.assertRaises(lexer.Error):
+                    self.processor.apply(input_str)

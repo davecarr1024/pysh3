@@ -58,7 +58,8 @@ TokenStream = stream_processor.Stream[Token]
 State = stream_processor.State[Char, Char]
 Result = stream_processor.Result[Char]
 ResultAndState = stream_processor.ResultAndState[Char, Char]
-Rule = stream_processor.Rule[Char, Char]
+_Rule = stream_processor.Rule[Char, Char]
+_HeadRule = stream_processor.HeadRule[Char, Char]
 Ref = stream_processor.Ref[Char, Char]
 And = stream_processor.And[Char, Char]
 Or = stream_processor.Or[Char, Char]
@@ -76,7 +77,7 @@ EXCLUDE_NAME_PREFIX = '_'
 class Lexer(stream_processor.Processor[Char, Char]):
     '''Lexer splits an incoming string into tokens'''
 
-    def __init__(self, rules: OrderedDict[str, Rule]):
+    def __init__(self, rules: OrderedDict[str, _Rule]):
         '''build a Lexer from a given set of rules'''
         super().__init__(
             _ROOT_RULE_NAME,
@@ -143,7 +144,7 @@ class Class(stream_processor.HeadRule[Char, Char]):
 
 
 @dataclass(frozen=True)
-class Literal(stream_processor.HeadRule[Char, Char]):
+class Literal(_HeadRule):
     '''lex rule matching a given char'''
 
     value: str
@@ -157,3 +158,29 @@ class Literal(stream_processor.HeadRule[Char, Char]):
 
     def result(self, head: Char) -> Result:
         return Result(value=head)
+
+
+@dataclass(frozen=True)
+class Not(_Rule):
+    '''negation of a given lex'''
+
+    child: _Rule
+
+    def apply(self, state: State) -> ResultAndState:
+        try:
+            self.child.apply(state)
+        except Error:
+            return ResultAndState(
+                Result(value=state.value.head),
+                state.with_value(state.value.tail)
+            )
+        else:
+            raise Error(
+                msg=f'Not {self} successfully applied child {self.child}')
+
+
+class Any(_Rule):  # pylint: disable=too-few-public-methods
+    '''lex rule matching anything'''
+
+    def apply(self, state: State) -> ResultAndState:
+        return ResultAndState(Result(value=state.value.head), state.with_value(state.value.tail))
