@@ -4,6 +4,8 @@ from collections import OrderedDict
 from typing import Callable, Mapping, TypeVar
 from . import lexer, parser, processor
 
+Error = processor.Error
+
 _ResultValue = TypeVar('_ResultValue')
 _Result = processor.Result[_ResultValue]
 _FactoryItem = TypeVar('_FactoryItem')
@@ -24,7 +26,7 @@ def factory(
 
 def load_lex_rule(regex: str) -> lexer.Rule:
     '''load a lex rule from a regex str'''
-    operators = '()[-]*+?!^.'
+    operators = '.\\'
     result = parser.Parser(
         'root',
         {
@@ -33,9 +35,12 @@ def load_lex_rule(regex: str) -> lexer.Rule:
             'operand': parser.Or([
                 parser.Ref('literal'),
                 parser.Ref('any'),
+                parser.Ref('special'),
             ]),
             'literal': parser.Literal('char'),
             'any': parser.Literal('.'),
+            'special': parser.And([parser.Literal('\\'), parser.Ref('special_char')]),
+            'special_char': parser.Literal('char'),
         },
         lexer.Lexer(OrderedDict({
             'char': lexer.Not(lexer.Class(operators)),
@@ -43,6 +48,15 @@ def load_lex_rule(regex: str) -> lexer.Rule:
         })
         )
     ).apply(regex)
+
+    def load_special(result: parser.Result) -> lexer.Rule:
+        special_char = result.where_one(
+            parser.Result.rule_name_is('special_char'))
+        special_rules: Mapping[str, lexer.Rule] = {
+            'w': lexer.Class.whitespace(),
+        }
+        assert special_char.value and special_char.value.value in special_rules, special_char
+        return special_rules[special_char.value.value]
 
     def load_literal(result: parser.Result) -> lexer.Rule:
         assert result.value, result
@@ -52,6 +66,7 @@ def load_lex_rule(regex: str) -> lexer.Rule:
         return factory({
             'literal': load_literal,
             'any': lambda _: lexer.Any(),
+            'special': load_special,
         })(result)
 
     def load_and(result: parser.Result) -> lexer.And:
