@@ -1,5 +1,6 @@
 '''tests for lexer module'''
 
+import string
 from typing import Tuple
 import unittest
 
@@ -44,6 +45,7 @@ class LexerTest(_StreamProcessorTestCase):
             ]),
             'f': lexer.OneOrMore(lexer.Literal('f')),
             '_g': lexer.Literal('g'),
+            'int': lexer.OneOrMore(lexer.Class(string.digits)),
         })
 
     def test_apply(self):
@@ -134,6 +136,13 @@ class LexerTest(_StreamProcessorTestCase):
                                 position=lexer.Position(0, 2)),
                 ])
             ),
+            (
+                '123',
+                lexer.TokenStream([
+                    lexer.Token(rule_name='int', value='123',
+                                position=lexer.Position(0, 0)),
+                ])
+            )
         ]):
             with self.subTest(input=input_str, expected=expected):
                 actual = self.processor.apply(input_str)
