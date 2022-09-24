@@ -186,7 +186,7 @@ class LexerTest(_StreamProcessorTestCase):
 
     def test_invalid_range(self):
         '''test for invalid values for lexer.Range'''
-        for min, max in list[Tuple[str, str]]([
+        for min_value, max_value in list[Tuple[str, str]]([
             ('', ''),
             ('', 'a'),
             ('a', ''),
@@ -194,6 +194,6 @@ class LexerTest(_StreamProcessorTestCase):
             ('aa', 'a'),
             ('b', 'a'),
         ]):
-            with self.subTest(min=min, max=max):
+            with self.subTest(min=min_value, max=max_value):
                 with self.assertRaises(lexer.Error):
-                    lexer.Range(min, max)
+                    lexer.Range(min_value, max_value)
