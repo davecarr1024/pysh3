@@ -40,7 +40,7 @@ def load_lex_rule(regex: str) -> lexer.Rule:
             'literal': parser.Literal('char'),
             'any': parser.Literal('.'),
             'special': parser.And([parser.Literal('\\'), parser.Ref('special_char')]),
-            'special_char': parser.Literal('char'),
+            'special_char': parser.Any(),
         },
         lexer.Lexer(OrderedDict({
             'char': lexer.Not(lexer.Class(operators)),
@@ -51,12 +51,12 @@ def load_lex_rule(regex: str) -> lexer.Rule:
 
     def load_special(result: parser.Result) -> lexer.Rule:
         special_char = result.where_one(
-            parser.Result.rule_name_is('special_char'))
-        special_rules: Mapping[str, lexer.Rule] = {
+            parser.Result.rule_name_is('special_char')).where_one(parser.Result.has_value)
+        assert special_char.value
+        value = special_char.value.value
+        return {
             'w': lexer.Class.whitespace(),
-        }
-        assert special_char.value and special_char.value.value in special_rules, special_char
-        return special_rules[special_char.value.value]
+        }.get(value, lexer.Literal(value))
 
     def load_literal(result: parser.Result) -> lexer.Rule:
         assert result.value, result

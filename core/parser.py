@@ -14,6 +14,7 @@ ZeroOrMore = stream_processor.ZeroOrMore[lexer.Token, lexer.Token]
 OneOrMore = stream_processor.OneOrMore[lexer.Token, lexer.Token]
 ZeroOrOne = stream_processor.ZeroOrOne[lexer.Token, lexer.Token]
 UntilEmpty = stream_processor.UntilEmpty[lexer.Token, lexer.Token]
+_HeadRule = stream_processor.HeadRule[lexer.Token, lexer.Token]
 
 
 @dataclass(frozen=True)
@@ -32,13 +33,24 @@ class Parser(stream_processor.Processor[lexer.Token, lexer.Token]):
 
 
 @dataclass(frozen=True)
-class Literal(stream_processor.HeadRule[lexer.Token, lexer.Token]):
+class Literal(_HeadRule):
     '''rule for matching tokens by rule_name'''
 
     rule_name: str
 
     def pred(self, head: lexer.Token) -> bool:
         return head.rule_name == self.rule_name
+
+    def result(self, head: lexer.Token) -> Result:
+        return Result(value=head)
+
+
+@dataclass(frozen=True)
+class Any(_HeadRule):
+    '''rule for matching any token'''
+
+    def pred(self, head: lexer.Token) -> bool:
+        return True
 
     def result(self, head: lexer.Token) -> Result:
         return Result(value=head)
