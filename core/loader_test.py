@@ -23,6 +23,7 @@ class LoadLexRuleTest(unittest.TestCase):
             ('\\w', lexer.Class.whitespace()),
             ('\\.', lexer.Literal('.')),
             ('(ab)', lexer.And([lexer.Literal('a'), lexer.Literal('b')])),
+            ('(a|b)', lexer.Or([lexer.Literal('a'), lexer.Literal('b')])),
         ]):
             with self.subTest(regex=regex, expected_lex_rule=expected_lex_rule):
                 actual_lex_rule = loader.load_lex_rule(regex)
