@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 import string
-from typing import Container, FrozenSet, Mapping, MutableSequence
+from typing import Container, MutableSequence, OrderedDict
 from . import stream_processor
 
 
@@ -72,17 +72,14 @@ _TOKEN_RULE_NAME = '_token'
 EXCLUDE_NAME_PREFIX = '_'
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, init=False)
 class Lexer(stream_processor.Processor[Char, Char]):
     '''Lexer splits an incoming string into tokens'''
 
-    _rule_names: FrozenSet[str]
-
-    @staticmethod
-    def build(rules: Mapping[str, Rule]) -> 'Lexer':
+    def __init__(self, rules: OrderedDict[str, Rule]):
         '''build a Lexer from a given set of rules'''
-        return Lexer(
-            '_root',
+        super().__init__(
+            _ROOT_RULE_NAME,
             {
                 _ROOT_RULE_NAME: UntilEmpty(Ref(_TOKEN_RULE_NAME)),
                 _TOKEN_RULE_NAME: Or([
@@ -91,7 +88,6 @@ class Lexer(stream_processor.Processor[Char, Char]):
                 ]),
                 **rules
             },
-            frozenset(rules.keys()),
         )
 
     @staticmethod
@@ -106,12 +102,10 @@ class Lexer(stream_processor.Processor[Char, Char]):
     def _convert_result(self, result: Result) -> TokenStream:
         tokens: MutableSequence[Token] = []
         for token_result in result[_TOKEN_RULE_NAME]:
-            rule_result = token_result.where_one(
-                Result.rule_name_in(self._rule_names))
+            rule_result = token_result.skip().where_one(Result.has_rule_name)
             rule_name = rule_result.rule_name
             assert rule_name, rule_result
-            chars = [char.value for char in rule_result.where(
-                Result.has_value) if char.value]
+            chars = rule_result.all_values()
             value = ''.join(char.value for char in chars)
             assert value
             if not rule_name.startswith(EXCLUDE_NAME_PREFIX):

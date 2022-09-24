@@ -1,5 +1,6 @@
 '''tests for parser'''
 
+import collections
 import string
 from typing import Tuple
 from . import lexer, parser, stream_processor_test
@@ -19,10 +20,10 @@ class ParserTest(
                 'root': parser.UntilEmpty(parser.Ref('expr')),
                 'expr': parser.Or([parser.Literal('id')]),
             },
-            lexer.Lexer.build({
+            lexer.Lexer(collections.OrderedDict({
                 '_ws': lexer.Class.whitespace(),
                 'id': lexer.OneOrMore(lexer.Class(string.ascii_letters)),
-            })
+            }))
         )
 
     def _result(self, rule_name: str, *children: parser.Result) -> parser.Result:

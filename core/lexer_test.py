@@ -1,5 +1,6 @@
 '''tests for lexer module'''
 
+from collections import OrderedDict
 import string
 from typing import Tuple
 import unittest
@@ -31,7 +32,7 @@ class LexerTest(_StreamProcessorTestCase):
 
     @property
     def processor(self) -> lexer.Lexer:
-        return lexer.Lexer.build({
+        return lexer.Lexer(OrderedDict({
             'a': lexer.Literal('a'),
             'b': lexer.And([lexer.Literal('b'), lexer.Literal('b')]),
             'c': lexer.Or([lexer.Literal('c'), lexer.Literal('C')]),
@@ -46,7 +47,7 @@ class LexerTest(_StreamProcessorTestCase):
             'f': lexer.OneOrMore(lexer.Literal('f')),
             '_g': lexer.Literal('g'),
             'int': lexer.OneOrMore(lexer.Class(string.digits)),
-        })
+        }))
 
     def test_apply(self):
         '''test successful apply cases'''

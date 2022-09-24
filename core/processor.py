@@ -156,6 +156,11 @@ class Result(Generic[_ResultValue]):
         return closure
 
     @staticmethod
+    def has_rule_name(result: 'Result[_ResultValue]') -> bool:
+        '''filter for where*() that returns results with non-None rule_names'''
+        return result.rule_name is not None
+
+    @staticmethod
     def value_is(value: _ResultValue) -> Callable[['Result[_ResultValue]'], bool]:
         '''filter for where*() that matches value'''
         def closure(result: Result[_ResultValue]) -> bool:
@@ -174,6 +179,10 @@ class Result(Generic[_ResultValue]):
             for result in self.where(self.has_value).children
             if result.value is not None
         ]
+
+    def skip(self) -> 'Result[_ResultValue]':
+        '''skip the current result and only consider its children'''
+        return Result[_ResultValue](children=self.children)
 
     def __iter__(self) -> Iterator['Result[_ResultValue]']:
         return iter(self.children)
