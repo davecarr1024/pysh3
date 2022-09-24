@@ -38,6 +38,9 @@ class Literal(_HeadRule):
 
     rule_name: str
 
+    def __str__(self) -> str:
+        return self.rule_name
+
     def pred(self, head: lexer.Token) -> bool:
         return head.rule_name == self.rule_name
 
@@ -48,6 +51,9 @@ class Literal(_HeadRule):
 @dataclass(frozen=True)
 class Any(_HeadRule):
     '''rule for matching any token'''
+
+    def __str__(self) -> str:
+        return '.'
 
     def pred(self, head: lexer.Token) -> bool:
         return True

@@ -26,8 +26,41 @@ def factory(
 
 def load_lex_rule(regex: str) -> lexer.Rule:
     '''load a lex rule from a regex str'''
-    operators = '.\\'
-    result = parser.Parser(
+    operators = '.\\()'
+
+    def load_special(result: parser.Result) -> lexer.Rule:
+        special_char = result.where_one(
+            parser.Result.rule_name_is('special_char')).where_one(parser.Result.has_value)
+        assert special_char.value
+        value = special_char.value.value
+        special_rules = {
+            'w': lexer.Class.whitespace(),
+        }
+        if value in special_rules:
+            return special_rules[value]
+        if value in operators:
+            return lexer.Literal(value)
+        raise Error(msg=f'invalid special char {value}')
+
+    def load_literal(result: parser.Result) -> lexer.Rule:
+        assert result.value, result
+        return lexer.Literal(result.value.value)
+
+    def load_and(result: parser.Result) -> lexer.Rule:
+        print(f'load_and({result})')
+        rule = lexer.And([load_rule(rule) for rule in result['rule']])
+        if len(rule.children) == 1:
+            return rule.children[0]
+        return rule
+
+    load_rule = factory({
+        'literal': load_literal,
+        'any': lambda _: lexer.Any(),
+        'special': load_special,
+        'and': load_and,
+    })
+
+    return load_and(parser.Parser(
         'root',
         {
             'root': parser.UntilEmpty(parser.Ref('rule')),
@@ -36,6 +69,7 @@ def load_lex_rule(regex: str) -> lexer.Rule:
                 parser.Ref('literal'),
                 parser.Ref('any'),
                 parser.Ref('special'),
+                parser.Ref('and'),
             ]),
             'literal': parser.Literal('char'),
             'any': parser.Literal('.'),
@@ -44,38 +78,15 @@ def load_lex_rule(regex: str) -> lexer.Rule:
                 parser.Literal('char'),
                 *[parser.Literal(operator) for operator in operators]
             ]),
+            'and': parser.And([
+                parser.Literal('('),
+                parser.OneOrMore(parser.Ref('rule')),
+                parser.Literal(')'),
+            ]),
         },
         lexer.Lexer(OrderedDict({
             'char': lexer.Not(lexer.Class(operators)),
             **{operator: lexer.Literal(operator) for operator in operators}
         })
         )
-    ).apply(regex)
-
-    def load_special(result: parser.Result) -> lexer.Rule:
-        special_char = result.where_one(
-            parser.Result.rule_name_is('special_char')).where_one(parser.Result.has_value)
-        assert special_char.value
-        value = special_char.value.value
-        return {
-            'w': lexer.Class.whitespace(),
-        }.get(value, lexer.Literal(value))
-
-    def load_literal(result: parser.Result) -> lexer.Rule:
-        assert result.value, result
-        return lexer.Literal(result.value.value)
-
-    def load_rule(result: parser.Result) -> lexer.Rule:
-        return factory({
-            'literal': load_literal,
-            'any': lambda _: lexer.Any(),
-            'special': load_special,
-        })(result)
-
-    def load_and(result: parser.Result) -> lexer.And:
-        return lexer.And([load_rule(rule) for rule in result['rule']])
-
-    lex_rule = load_and(result)
-    if len(lex_rule.children) == 1:
-        return lex_rule.children[0]
-    return lex_rule
+    ).apply(regex))

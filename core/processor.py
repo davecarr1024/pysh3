@@ -304,6 +304,9 @@ class Ref(Rule[_ResultValue, _StateValue]):
 
     value: str
 
+    def __str__(self) -> str:
+        return self.value
+
     def apply(self, state: State[_ResultValue, _StateValue]
               ) -> ResultAndState[_ResultValue, _StateValue]:
         '''lookup the referrant and apply it to state'''
@@ -315,6 +318,9 @@ class And(Rule[_ResultValue, _StateValue]):
     '''applies a conjunction of rules to a state'''
 
     children: Sequence[Rule[_ResultValue, _StateValue]]
+
+    def __str__(self) -> str:
+        return f'({" ".join(str(child) for child in self.children)})'
 
     def apply(self, state: State[_ResultValue, _StateValue]
               ) -> ResultAndState[_ResultValue, _StateValue]:
@@ -340,6 +346,9 @@ class Or(Rule[_ResultValue, _StateValue]):
 
     children: Sequence[Rule[_ResultValue, _StateValue]]
 
+    def __str__(self) -> str:
+        return f'({" | ".join(str(child) for child in self.children)})'
+
     def apply(self, state: State[_ResultValue, _StateValue]
               ) -> ResultAndState[_ResultValue, _StateValue]:
         '''applies child rules until one succeeds, or returns all child errors'''
@@ -357,6 +366,9 @@ class ZeroOrMore(Rule[_ResultValue, _StateValue]):
     '''applies a rule zero or more times'''
 
     child: Rule[_ResultValue, _StateValue]
+
+    def __str__(self) -> str:
+        return f'{self.child}*'
 
     def apply(self, state: State[_ResultValue, _StateValue]
               ) -> ResultAndState[_ResultValue, _StateValue]:
@@ -377,6 +389,9 @@ class OneOrMore(Rule[_ResultValue, _StateValue]):
     '''applies a rule one or more times'''
 
     child: Rule[_ResultValue, _StateValue]
+
+    def __str__(self) -> str:
+        return f'{self.child}+'
 
     def apply(self, state: State[_ResultValue, _StateValue]
               ) -> ResultAndState[_ResultValue, _StateValue]:
@@ -403,6 +418,9 @@ class ZeroOrOne(Rule[_ResultValue, _StateValue]):
     '''applies a rule zero or one times'''
 
     child: Rule[_ResultValue, _StateValue]
+
+    def __str__(self) -> str:
+        return f'{self.child}?'
 
     def apply(self, state: State[_ResultValue, _StateValue]
               ) -> ResultAndState[_ResultValue, _StateValue]:

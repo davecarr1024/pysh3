@@ -153,6 +153,9 @@ class Literal(_HeadRule):
         if len(self.value) != 1:
             raise Error(msg=f'invalid literal value {self.value}')
 
+    def __str__(self) -> str:
+        return self.value
+
     def pred(self, head: Char) -> bool:
         return head.value == self.value
 
@@ -165,6 +168,9 @@ class Not(Rule):
     '''negation of a given lex'''
 
     child: Rule
+
+    def __str__(self) -> str:
+        return f'^{self.child}'
 
     def apply(self, state: State) -> ResultAndState:
         try:
@@ -182,6 +188,9 @@ class Not(Rule):
 @dataclass(frozen=True)
 class Any(Rule):  # pylint: disable=too-few-public-methods
     '''lex rule matching anything'''
+
+    def __str__(self) -> str:
+        return '.'
 
     def apply(self, state: State) -> ResultAndState:
         return ResultAndState(Result(value=state.value.head), state.with_value(state.value.tail))
