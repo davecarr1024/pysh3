@@ -40,7 +40,10 @@ def load_lex_rule(regex: str) -> lexer.Rule:
             'literal': parser.Literal('char'),
             'any': parser.Literal('.'),
             'special': parser.And([parser.Literal('\\'), parser.Ref('special_char')]),
-            'special_char': parser.Any(),
+            'special_char': parser.Or([
+                parser.Literal('char'),
+                *[parser.Literal(operator) for operator in operators]
+            ]),
         },
         lexer.Lexer(OrderedDict({
             'char': lexer.Not(lexer.Class(operators)),
