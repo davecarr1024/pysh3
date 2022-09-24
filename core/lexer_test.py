@@ -49,6 +49,7 @@ class LexerTest(_StreamProcessorTestCase):
             'int': lexer.OneOrMore(lexer.Class(string.digits)),
             'h': lexer.And([lexer.Literal('h'), lexer.Not(lexer.Literal('h'))]),
             'i': lexer.And([lexer.Literal('i'), lexer.Any()]),
+            'j': lexer.OneOrMore(lexer.Range('j', 'l')),
         }))
 
     def test_apply(self):
@@ -160,6 +161,13 @@ class LexerTest(_StreamProcessorTestCase):
                                 position=lexer.Position(0, 0)),
                 ])
             ),
+            (
+                'jkl',
+                lexer.TokenStream([
+                    lexer.Token(rule_name='j', value='jkl',
+                                position=lexer.Position(0, 0)),
+                ])
+            ),
         ]):
             with self.subTest(input=input_str, expected=expected):
                 actual = self.processor.apply(input_str)
@@ -175,3 +183,17 @@ class LexerTest(_StreamProcessorTestCase):
             with self.subTest(input_str=input_str):
                 with self.assertRaises(lexer.Error):
                     self.processor.apply(input_str)
+
+    def test_invalid_range(self):
+        '''test for invalid values for lexer.Range'''
+        for min, max in list[Tuple[str, str]]([
+            ('', ''),
+            ('', 'a'),
+            ('a', ''),
+            ('a', 'aa'),
+            ('aa', 'a'),
+            ('b', 'a'),
+        ]):
+            with self.subTest(min=min, max=max):
+                with self.assertRaises(lexer.Error):
+                    lexer.Range(min, max)

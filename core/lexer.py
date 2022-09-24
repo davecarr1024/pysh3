@@ -59,7 +59,6 @@ State = stream_processor.State[Char, Char]
 Result = stream_processor.Result[Char]
 ResultAndState = stream_processor.ResultAndState[Char, Char]
 Rule = stream_processor.Rule[Char, Char]
-_HeadRule = stream_processor.HeadRule[Char, Char]
 Ref = stream_processor.Ref[Char, Char]
 And = stream_processor.And[Char, Char]
 Or = stream_processor.Or[Char, Char]
@@ -125,17 +124,19 @@ class Lexer(stream_processor.Processor[Char, Char]):
                 children=[error]) from error
 
 
+class _HeadRule(stream_processor.HeadRule[Char, Char]):
+    def result(self, head: Char) -> Result:
+        return Result(value=head)
+
+
 @dataclass(frozen=True)
-class Class(stream_processor.HeadRule[Char, Char]):
+class Class(_HeadRule):
     '''lex rule matching range of chars'''
 
     values: Container[str]
 
     def pred(self, head: Char) -> bool:
         return head.value in self.values
-
-    def result(self, head: Char) -> Result:
-        return Result(value=head)
 
     @staticmethod
     def whitespace() -> 'Class':
@@ -158,9 +159,6 @@ class Literal(_HeadRule):
 
     def pred(self, head: Char) -> bool:
         return head.value == self.value
-
-    def result(self, head: Char) -> Result:
-        return Result(value=head)
 
 
 @dataclass(frozen=True)
@@ -186,11 +184,33 @@ class Not(Rule):
 
 
 @dataclass(frozen=True)
-class Any(Rule):  # pylint: disable=too-few-public-methods
+class Any(_HeadRule):
     '''lex rule matching anything'''
 
     def __str__(self) -> str:
         return '.'
 
-    def apply(self, state: State) -> ResultAndState:
-        return ResultAndState(Result(value=state.value.head), state.with_value(state.value.tail))
+    def pred(self, head: Char) -> bool:
+        return True
+
+
+@dataclass(frozen=True)
+class Range(_HeadRule):
+    '''lex rule mathcing a range of chars'''
+
+    min: str
+    max: str
+
+    def __post_init__(self):
+        if len(self.min) != 1:
+            raise Error(msg=f'invalid min value {self.min}')
+        if len(self.max) != 1:
+            raise Error(msg=f'invalid max value {self.max}')
+        if self.min >= self.max:
+            raise Error(msg=f'invalid range {self}')
+
+    def __str__(self) -> str:
+        return f'[{self.min}-{self.max}]'
+
+    def pred(self, head: Char) -> bool:
+        return self.min <= head.value <= self.max
