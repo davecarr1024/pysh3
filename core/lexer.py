@@ -58,7 +58,7 @@ TokenStream = stream_processor.Stream[Token]
 State = stream_processor.State[Char, Char]
 Result = stream_processor.Result[Char]
 ResultAndState = stream_processor.ResultAndState[Char, Char]
-_Rule = stream_processor.Rule[Char, Char]
+Rule = stream_processor.Rule[Char, Char]
 _HeadRule = stream_processor.HeadRule[Char, Char]
 Ref = stream_processor.Ref[Char, Char]
 And = stream_processor.And[Char, Char]
@@ -77,7 +77,7 @@ EXCLUDE_NAME_PREFIX = '_'
 class Lexer(stream_processor.Processor[Char, Char]):
     '''Lexer splits an incoming string into tokens'''
 
-    def __init__(self, rules: OrderedDict[str, _Rule]):
+    def __init__(self, rules: OrderedDict[str, Rule]):
         '''build a Lexer from a given set of rules'''
         super().__init__(
             _ROOT_RULE_NAME,
@@ -161,10 +161,10 @@ class Literal(_HeadRule):
 
 
 @dataclass(frozen=True)
-class Not(_Rule):
+class Not(Rule):
     '''negation of a given lex'''
 
-    child: _Rule
+    child: Rule
 
     def apply(self, state: State) -> ResultAndState:
         try:
@@ -179,7 +179,7 @@ class Not(_Rule):
                 msg=f'Not {self} successfully applied child {self.child}')
 
 
-class Any(_Rule):  # pylint: disable=too-few-public-methods
+class Any(Rule):  # pylint: disable=too-few-public-methods
     '''lex rule matching anything'''
 
     def apply(self, state: State) -> ResultAndState:
