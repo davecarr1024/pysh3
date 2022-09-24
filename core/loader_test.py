@@ -12,6 +12,7 @@ class LoadLexRuleTest(unittest.TestCase):
         '''tests for loader.load_lex_rule'''
         for regex, expected_lex_rule in list[Tuple[str, lexer.Rule]]([
             ('a', lexer.Literal('a')),
+            ('.', lexer.Any()),
         ]):
             with self.subTest(regex=regex, expected_lex_rule=expected_lex_rule):
                 actual_lex_rule = loader.load_lex_rule(regex)

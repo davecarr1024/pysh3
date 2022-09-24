@@ -179,6 +179,7 @@ class Not(Rule):
                 msg=f'Not {self} successfully applied child {self.child}')
 
 
+@dataclass(frozen=True)
 class Any(Rule):  # pylint: disable=too-few-public-methods
     '''lex rule matching anything'''
 

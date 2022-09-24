@@ -24,14 +24,18 @@ def factory(
 
 def load_lex_rule(regex: str) -> lexer.Rule:
     '''load a lex rule from a regex str'''
-    operators = '()[-]*+?!^'
+    operators = '()[-]*+?!^.'
     result = parser.Parser(
         'root',
         {
             'root': parser.UntilEmpty(parser.Ref('rule')),
             'rule': parser.Or([parser.Ref('operand')]),
-            'operand': parser.Or([parser.Ref('literal')]),
+            'operand': parser.Or([
+                parser.Ref('literal'),
+                parser.Ref('any'),
+            ]),
             'literal': parser.Literal('char'),
+            'any': parser.Literal('.'),
         },
         lexer.Lexer(OrderedDict({
             'char': lexer.Not(lexer.Class(operators)),
@@ -47,6 +51,7 @@ def load_lex_rule(regex: str) -> lexer.Rule:
     def load_rule(result: parser.Result) -> lexer.Rule:
         return factory({
             'literal': load_literal,
+            'any': lambda _: lexer.Any(),
         })(result)
 
     def load_and(result: parser.Result) -> lexer.And:
