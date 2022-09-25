@@ -17,8 +17,14 @@ def factory(
 ) -> _Loader[_ResultValue, _FactoryItem]:
     '''generic result factory triggered by result rule_name'''
     def _loader(result: _Result[_ResultValue]) -> _FactoryItem:
-        value = result.skip().where_one(
-            lambda child_result: child_result.rule_name in loaders.keys())
+        try:
+            value = result.skip().where_one(
+                lambda child_result: child_result.rule_name in loaders.keys())
+        except Error as error:
+            raise Error(
+                msg=f'failed to find operand for factory with keys {loaders.keys()} in {result}',
+                children=[error]
+            ) from error
         assert value.rule_name and value.rule_name in loaders, value
         return loaders[value.rule_name](value)
     return _loader
@@ -230,19 +236,36 @@ def load_parser(grammar: str) -> parser.Parser:
         rules: MutableMapping[str, parser.Rule] = {}
 
         def load_ref(result: parser.Result) -> parser.Rule:
-            return parser.Ref(get_token_value(result))
+            try:
+                return parser.Ref(get_token_value(result))
+            except Error as error:
+                raise Error(
+                    msg=f'failed to load ref {result}', children=[error]) from error
+
+        def load_and(result: parser.Result) -> parser.Rule:
+            return parser.And([load_rule(operand) for operand in result['operand']])
 
         load_rule = factory({
             'ref': load_ref,
+            'and': load_and,
         })
 
         for decl in result['parser_decl']:
-            name = get_token_value(decl.where_one(
-                parser.Result.rule_name_is('parser_rule_name')))
+            try:
+                name = get_token_value(decl.where_one(
+                    parser.Result.rule_name_is('rule_name')))
+            except Error as error:
+                raise Error(
+                    msg=f'failed to get rule_name in {decl}', children=[error]) from error
             if root_rule_name is None:
                 root_rule_name = name
-            rules[name] = load_rule(decl.where_one(
-                parser.Result.rule_name_is('parser_rule')))
+            try:
+                rule_result = decl.where_one(
+                    parser.Result.rule_name_is('rule'))
+            except Error as error:
+                raise Error(msg=f'failed to find rule in decl {decl}', children=[
+                            error]) from error
+            rules[name] = load_rule(rule_result)
 
         if root_rule_name is None:
             raise Error(msg='no root rule name found')
@@ -263,15 +286,23 @@ def load_parser(grammar: str) -> parser.Parser:
                 parser.Literal('lexer_val'),
             ]),
             'parser_decl': parser.And([
-                parser.Ref('parser_rule_name'),
+                parser.Ref('rule_name'),
                 parser.Literal('=>'),
-                parser.Ref('parser_rule'),
+                parser.Ref('rule'),
             ]),
-            'parser_rule_name': parser.Literal('id'),
-            'parser_rule': parser.Or([
+            'rule_name': parser.Literal('id'),
+            'rule': parser.Or([
+                parser.Ref('and'),
+                parser.Ref('operand'),
+            ]),
+            'operand': parser.Or([
                 parser.Ref('ref'),
             ]),
             'ref': parser.Literal('id'),
+            'and': parser.And([
+                parser.Ref('operand'),
+                parser.OneOrMore(parser.Ref('operand')),
+            ]),
         },
         lexer.Lexer(OrderedDict({
             '_ws': lexer.Class.whitespace(),

@@ -26,6 +26,16 @@ class Parser(stream_processor.Processor[lexer.Token, lexer.Token]):
 
     lexer: lexer.Lexer
 
+    def __str__(self) -> str:
+        def str_rule(name: str) -> str:
+            return f'\n{name} => {self.rules[name]};'
+        output = str(self.lexer)
+        output += str_rule(self.root_rule_name)
+        for name in self.rules.keys():
+            if name != self.root_rule_name:
+                output += str_rule(name)
+        return output
+
     def apply(self, input_str: str) -> Result:
         '''apply the grammar to the input text and return the structured result'''
         try:

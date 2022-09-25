@@ -72,8 +72,9 @@ UntilEmpty = stream_processor.UntilEmpty[Char, Char]
 NaryRule = stream_processor.NaryRule[Char, Char]
 UnaryRule = stream_processor.UnaryRule[Char, Char]
 
-_ROOT_RULE_NAME = '_root'
-_TOKEN_RULE_NAME = '_token'
+_INTERNAL_PREFIX = '_lexer_'
+_ROOT_RULE_NAME = f'{_INTERNAL_PREFIX}root'
+_TOKEN_RULE_NAME = f'{_INTERNAL_PREFIX}token'
 EXCLUDE_NAME_PREFIX = '_'
 
 
@@ -94,6 +95,13 @@ class Lexer(stream_processor.Processor[Char, Char]):
                 **rules
             },
         )
+
+    def __str__(self) -> str:
+        output = ''
+        for name, rule in self.rules.items():
+            if not name.startswith(_INTERNAL_PREFIX):
+                output += f'\n{name} = "{rule}";'
+        return output
 
     @staticmethod
     def _convert_input(input_str: str) -> CharStream:
