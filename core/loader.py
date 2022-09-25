@@ -26,7 +26,7 @@ def factory(
 
 def load_lex_rule(regex: str) -> lexer.Rule:
     '''load a lex rule from a regex str'''
-    operators = '.\\()|[]-'
+    operators = '.\\()|[]-*'
 
     def load_special(result: parser.Result) -> lexer.Rule:
         special_char = result.where_one(
@@ -67,6 +67,9 @@ def load_lex_rule(regex: str) -> lexer.Rule:
         assert min_result.value and max_result.value
         return lexer.Range(min_result.value.value, max_result.value.value)
 
+    def load_one_or_more(result: parser.Result) -> lexer.Rule:
+        return lexer.OneOrMore(load_rule(result.where_one(parser.Result.rule_name_is('operand'))))
+
     load_rule = factory({
         'literal': load_literal,
         'any': lambda _: lexer.Any(),
@@ -74,6 +77,7 @@ def load_lex_rule(regex: str) -> lexer.Rule:
         'and': load_and,
         'or': load_or,
         'class': load_class,
+        'one_or_more': load_one_or_more,
     })
 
     load_class_part = factory({
@@ -86,7 +90,10 @@ def load_lex_rule(regex: str) -> lexer.Rule:
         'root',
         {
             'root': parser.UntilEmpty(parser.Ref('rule')),
-            'rule': parser.Or([parser.Ref('operand')]),
+            'rule': parser.Or([
+                parser.Ref('operation'),
+                parser.Ref('operand'),
+            ]),
             'operand': parser.Or([
                 parser.Ref('literal'),
                 parser.Ref('any'),
@@ -94,6 +101,13 @@ def load_lex_rule(regex: str) -> lexer.Rule:
                 parser.Ref('and'),
                 parser.Ref('or'),
                 parser.Ref('class'),
+            ]),
+            'operation': parser.Or([
+                parser.Ref('one_or_more'),
+            ]),
+            'one_or_more': parser.And([
+                parser.Ref('operand'),
+                parser.Literal('*'),
             ]),
             'literal': parser.Literal('char'),
             'any': parser.Literal('.'),
