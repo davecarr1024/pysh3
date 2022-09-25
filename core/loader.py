@@ -215,7 +215,8 @@ def load_lex_rule(regex: str) -> lexer.Rule:
 def load_parser(grammar: str) -> parser.Parser:
     '''load a generic parser from a text definition'''
 
-    operators: Container[str] = ('=>', '=', ';', '|', '(', ')',)
+    operators: Container[str] = (
+        '=>', '=', ';', '|', '(', ')', '*', '+', '?', '!')
     lexer_rules: OrderedDict[str, lexer.Rule] = OrderedDict[str, lexer.Rule]()
 
     def operator_rule(operator: str) -> lexer.Rule:
@@ -249,10 +250,24 @@ def load_parser(grammar: str) -> parser.Parser:
                 return rule_type([load_rule(operand) for operand in result['operand']])
             return closure
 
+        def load_unary_operation(
+            rule_type: Type[parser.UnaryRule]
+        ) -> Callable[[parser.Result], parser.Rule]:
+            def closure(result: parser.Result) -> parser.Rule:
+                return rule_type(
+                    load_rule(
+                        result.where_one(
+                            parser.Result.rule_name_is('unary_operand'))))
+            return closure
+
         load_rule = factory({
             'ref': load_ref,
             'and': load_nary_operation(parser.And),
             'or': load_nary_operation(parser.Or),
+            'zero_or_more': load_unary_operation(parser.ZeroOrMore),
+            'one_or_more': load_unary_operation(parser.OneOrMore),
+            'zero_or_one': load_unary_operation(parser.ZeroOrOne),
+            'until_empty': load_unary_operation(parser.UntilEmpty),
         })
 
         for decl in result['parser_decl']:
@@ -302,10 +317,14 @@ def load_parser(grammar: str) -> parser.Parser:
                 parser.Ref('operand'),
             ]),
             'operand': parser.Or([
-                parser.Ref('paren_rule'),
+                parser.Ref('zero_or_more'),
+                parser.Ref('one_or_more'),
+                parser.Ref('zero_or_one'),
+                parser.Ref('until_empty'),
                 parser.Ref('unary_operand'),
             ]),
             'unary_operand': parser.Or([
+                parser.Ref('paren_rule'),
                 parser.Ref('ref'),
             ]),
             'ref': parser.Literal('id'),
@@ -326,7 +345,23 @@ def load_parser(grammar: str) -> parser.Parser:
                 parser.Literal('('),
                 parser.Ref('rule'),
                 parser.Literal(')'),
-            ])
+            ]),
+            'zero_or_more': parser.And([
+                parser.Ref('unary_operand'),
+                parser.Literal('*'),
+            ]),
+            'one_or_more': parser.And([
+                parser.Ref('unary_operand'),
+                parser.Literal('+'),
+            ]),
+            'zero_or_one': parser.And([
+                parser.Ref('unary_operand'),
+                parser.Literal('?'),
+            ]),
+            'until_empty': parser.And([
+                parser.Ref('unary_operand'),
+                parser.Literal('!'),
+            ]),
         },
         lexer.Lexer(OrderedDict({
             '_ws': lexer.Class.whitespace(),
