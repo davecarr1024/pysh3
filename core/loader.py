@@ -219,7 +219,7 @@ def load_parser(grammar: str) -> parser.Parser:
         '=>', '=', ';', '|', '(', ')', '*', '+', '?', '!')
     lexer_rules: OrderedDict[str, lexer.Rule] = OrderedDict[str, lexer.Rule]()
 
-    def operator_rule(operator: str) -> lexer.Rule:
+    def lexer_literal_rule(operator: str) -> lexer.Rule:
         if len(operator) == 1:
             return lexer.Literal(operator)
         return lexer.And([lexer.Literal(char) for char in operator])
@@ -260,6 +260,11 @@ def load_parser(grammar: str) -> parser.Parser:
                             parser.Result.rule_name_is('unary_operand'))))
             return closure
 
+        def load_lexer_literal(result: parser.Result) -> parser.Rule:
+            lexer_val = get_token_value(result)[1:-1]
+            lexer_rules[lexer_val] = lexer_literal_rule(lexer_val)
+            return parser.Literal(lexer_val)
+
         load_rule = factory({
             'ref': load_ref,
             'and': load_nary_operation(parser.And),
@@ -268,6 +273,7 @@ def load_parser(grammar: str) -> parser.Parser:
             'one_or_more': load_unary_operation(parser.OneOrMore),
             'zero_or_one': load_unary_operation(parser.ZeroOrOne),
             'until_empty': load_unary_operation(parser.UntilEmpty),
+            'lexer_literal': load_lexer_literal,
         })
 
         for decl in result['parser_decl']:
@@ -326,6 +332,7 @@ def load_parser(grammar: str) -> parser.Parser:
             'unary_operand': parser.Or([
                 parser.Ref('paren_rule'),
                 parser.Ref('ref'),
+                parser.Ref('lexer_literal'),
             ]),
             'ref': parser.Literal('id'),
             'and': parser.And([
@@ -362,12 +369,13 @@ def load_parser(grammar: str) -> parser.Parser:
                 parser.Ref('unary_operand'),
                 parser.Literal('!'),
             ]),
+            'lexer_literal': parser.Literal('lexer_val'),
         },
         lexer.Lexer(OrderedDict({
             '_ws': lexer.Class.whitespace(),
             'id': load_lex_rule(r'[_a-zA-Z][_a-zA-Z0-9]*'),
             'lexer_val': load_lex_rule(r'"(^")+"'),
-            **{operator: operator_rule(operator) for operator in operators}
+            **{operator: lexer_literal_rule(operator) for operator in operators}
         }))
     ).apply(grammar)
 
