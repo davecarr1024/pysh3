@@ -1,7 +1,7 @@
 '''utils for loading lexers and parsers from text specifications'''
 
 from collections import OrderedDict
-from typing import Callable, Mapping, TypeVar
+from typing import Callable, Mapping, Type, TypeVar
 from . import lexer, parser, processor
 
 Error = processor.Error
@@ -26,7 +26,7 @@ def factory(
 
 def load_lex_rule(regex: str) -> lexer.Rule:
     '''load a lex rule from a regex str'''
-    operators = '.\\()|[]-*'
+    operators = '.\\()|[]-*+?!^'
 
     def load_special(result: parser.Result) -> lexer.Rule:
         special_char = result.where_one(
@@ -67,8 +67,10 @@ def load_lex_rule(regex: str) -> lexer.Rule:
         assert min_result.value and max_result.value
         return lexer.Range(min_result.value.value, max_result.value.value)
 
-    def load_one_or_more(result: parser.Result) -> lexer.Rule:
-        return lexer.OneOrMore(load_rule(result.where_one(parser.Result.rule_name_is('operand'))))
+    def unary_operation(rule_type: Type[lexer.UnaryRule]) -> _Loader[lexer.Token, lexer.Rule]:
+        def load(result: parser.Result) -> lexer.Rule:
+            return rule_type(load_rule(result.where_one(parser.Result.rule_name_is('operand'))))
+        return load
 
     load_rule = factory({
         'literal': load_literal,
@@ -77,7 +79,11 @@ def load_lex_rule(regex: str) -> lexer.Rule:
         'and': load_and,
         'or': load_or,
         'class': load_class,
-        'one_or_more': load_one_or_more,
+        'zero_or_more': unary_operation(lexer.ZeroOrMore),
+        'one_or_more': unary_operation(lexer.OneOrMore),
+        'zero_or_one': unary_operation(lexer.ZeroOrOne),
+        'until_empty': unary_operation(lexer.UntilEmpty),
+        'not': unary_operation(lexer.Not),
     })
 
     load_class_part = factory({
@@ -103,11 +109,31 @@ def load_lex_rule(regex: str) -> lexer.Rule:
                 parser.Ref('class'),
             ]),
             'operation': parser.Or([
+                parser.Ref('zero_or_more'),
                 parser.Ref('one_or_more'),
+                parser.Ref('zero_or_one'),
+                parser.Ref('until_empty'),
+                parser.Ref('not'),
+            ]),
+            'zero_or_more': parser.And([
+                parser.Ref('operand'),
+                parser.Literal('*'),
             ]),
             'one_or_more': parser.And([
                 parser.Ref('operand'),
-                parser.Literal('*'),
+                parser.Literal('+'),
+            ]),
+            'zero_or_one': parser.And([
+                parser.Ref('operand'),
+                parser.Literal('?'),
+            ]),
+            'until_empty': parser.And([
+                parser.Ref('operand'),
+                parser.Literal('!'),
+            ]),
+            'not': parser.And([
+                parser.Literal('^'),
+                parser.Ref('operand'),
             ]),
             'literal': parser.Literal('char'),
             'any': parser.Literal('.'),

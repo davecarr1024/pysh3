@@ -60,6 +60,8 @@ Or = processor.Or[_ResultValue, Stream[_Item]]
 ZeroOrMore = processor.ZeroOrMore[_ResultValue, Stream[_Item]]
 OneOrMore = processor.OneOrMore[_ResultValue, Stream[_Item]]
 ZeroOrOne = processor.ZeroOrOne[_ResultValue, Stream[_Item]]
+NaryRule = processor.NaryRule[_ResultValue, Stream[_Item]]
+UnaryRule = processor.UnaryRule[_ResultValue, Stream[_Item]]
 
 
 class UntilEmpty(processor.While[_ResultValue, Stream[_Item]]):

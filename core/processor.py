@@ -316,10 +316,15 @@ class Ref(Rule[_ResultValue, _StateValue]):
 
 
 @dataclass(frozen=True)
-class And(Rule[_ResultValue, _StateValue]):
-    '''applies a conjunction of rules to a state'''
+class NaryRule(Rule[_ResultValue, _StateValue]):
+    '''generic rule with n children'''
 
     children: Sequence[Rule[_ResultValue, _StateValue]]
+
+
+@dataclass(frozen=True)
+class And(NaryRule[_ResultValue, _StateValue]):
+    '''applies a conjunction of rules to a state'''
 
     def __str__(self) -> str:
         return f'({" ".join(str(child) for child in self.children)})'
@@ -343,10 +348,8 @@ class And(Rule[_ResultValue, _StateValue]):
 
 
 @dataclass(frozen=True)
-class Or(Rule[_ResultValue, _StateValue]):
+class Or(NaryRule[_ResultValue, _StateValue]):
     '''applies a disjunction of rules to a state'''
-
-    children: Sequence[Rule[_ResultValue, _StateValue]]
 
     def __str__(self) -> str:
         return f'({" | ".join(str(child) for child in self.children)})'
@@ -364,10 +367,15 @@ class Or(Rule[_ResultValue, _StateValue]):
 
 
 @dataclass(frozen=True)
-class ZeroOrMore(Rule[_ResultValue, _StateValue]):
-    '''applies a rule zero or more times'''
+class UnaryRule(Rule[_ResultValue, _StateValue]):
+    '''generic rule with one child'''
 
     child: Rule[_ResultValue, _StateValue]
+
+
+@dataclass(frozen=True)
+class ZeroOrMore(UnaryRule[_ResultValue, _StateValue]):
+    '''applies a rule zero or more times'''
 
     def __str__(self) -> str:
         return f'{self.child}*'
@@ -387,10 +395,8 @@ class ZeroOrMore(Rule[_ResultValue, _StateValue]):
 
 
 @dataclass(frozen=True)
-class OneOrMore(Rule[_ResultValue, _StateValue]):
+class OneOrMore(UnaryRule[_ResultValue, _StateValue]):
     '''applies a rule one or more times'''
-
-    child: Rule[_ResultValue, _StateValue]
 
     def __str__(self) -> str:
         return f'{self.child}+'
@@ -416,10 +422,8 @@ class OneOrMore(Rule[_ResultValue, _StateValue]):
 
 
 @dataclass(frozen=True)
-class ZeroOrOne(Rule[_ResultValue, _StateValue]):
+class ZeroOrOne(UnaryRule[_ResultValue, _StateValue]):
     '''applies a rule zero or one times'''
-
-    child: Rule[_ResultValue, _StateValue]
 
     def __str__(self) -> str:
         return f'{self.child}?'
@@ -434,10 +438,8 @@ class ZeroOrOne(Rule[_ResultValue, _StateValue]):
 
 
 @dataclass(frozen=True)
-class While(Rule[_ResultValue, _StateValue], ABC):
+class While(UnaryRule[_ResultValue, _StateValue], ABC):
     '''applies a rule while a condition is true'''
-
-    child: Rule[_ResultValue, _StateValue]
 
     @abstractmethod
     def cond(self, state_value: _StateValue) -> bool:

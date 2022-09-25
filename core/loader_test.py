@@ -27,7 +27,11 @@ class LoadLexRuleTest(unittest.TestCase):
             ('[ab]', lexer.Or([lexer.Literal('a'), lexer.Literal('b')])),
             ('[a-z]', lexer.Range('a', 'z')),
             ('[a-zA-Z]', lexer.Or([lexer.Range('a', 'z'), lexer.Range('A', 'Z')])),
-            ('a*', lexer.OneOrMore(lexer.Literal('a'))),
+            ('a*', lexer.ZeroOrMore(lexer.Literal('a'))),
+            ('a+', lexer.OneOrMore(lexer.Literal('a'))),
+            ('a?', lexer.ZeroOrOne(lexer.Literal('a'))),
+            ('a!', lexer.UntilEmpty(lexer.Literal('a'))),
+            ('^a', lexer.Not(lexer.Literal('a'))),
         ]):
             with self.subTest(regex=regex, expected_lex_rule=expected_lex_rule):
                 actual_lex_rule = loader.load_lex_rule(regex)

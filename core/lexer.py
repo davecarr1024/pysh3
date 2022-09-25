@@ -69,6 +69,8 @@ ZeroOrMore = stream_processor.ZeroOrMore[Char, Char]
 OneOrMore = stream_processor.OneOrMore[Char, Char]
 ZeroOrOne = stream_processor.ZeroOrOne[Char, Char]
 UntilEmpty = stream_processor.UntilEmpty[Char, Char]
+NaryRule = stream_processor.NaryRule[Char, Char]
+UnaryRule = stream_processor.UnaryRule[Char, Char]
 
 _ROOT_RULE_NAME = '_root'
 _TOKEN_RULE_NAME = '_token'
@@ -165,10 +167,8 @@ class Literal(_HeadRule):
 
 
 @dataclass(frozen=True)
-class Not(Rule):
+class Not(UnaryRule):
     '''negation of a given lex'''
-
-    child: Rule
 
     def __str__(self) -> str:
         return f'^{self.child}'
