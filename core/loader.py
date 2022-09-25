@@ -242,12 +242,17 @@ def load_parser(grammar: str) -> parser.Parser:
                 raise Error(
                     msg=f'failed to load ref {result}', children=[error]) from error
 
-        def load_and(result: parser.Result) -> parser.Rule:
-            return parser.And([load_rule(operand) for operand in result['operand']])
+        def load_nary_operation(
+            rule_type: Type[parser.NaryRule]
+        ) -> Callable[[parser.Result], parser.Rule]:
+            def closure(result: parser.Result) -> parser.Rule:
+                return rule_type([load_rule(operand) for operand in result['operand']])
+            return closure
 
         load_rule = factory({
             'ref': load_ref,
-            'and': load_and,
+            'and': load_nary_operation(parser.And),
+            'or': load_nary_operation(parser.Or),
         })
 
         for decl in result['parser_decl']:
@@ -292,6 +297,7 @@ def load_parser(grammar: str) -> parser.Parser:
             ]),
             'rule_name': parser.Literal('id'),
             'rule': parser.Or([
+                parser.Ref('or'),
                 parser.Ref('and'),
                 parser.Ref('operand'),
             ]),
@@ -302,6 +308,15 @@ def load_parser(grammar: str) -> parser.Parser:
             'and': parser.And([
                 parser.Ref('operand'),
                 parser.OneOrMore(parser.Ref('operand')),
+            ]),
+            'or': parser.And([
+                parser.Ref('operand'),
+                parser.OneOrMore(
+                    parser.And([
+                        parser.Literal('|'),
+                        parser.Ref('operand'),
+                    ])
+                )
             ]),
         },
         lexer.Lexer(OrderedDict({
