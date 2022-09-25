@@ -67,7 +67,7 @@ def load_lex_rule(regex: str) -> lexer.Rule:
         assert min_result.value and max_result.value
         return lexer.Range(min_result.value.value, max_result.value.value)
 
-    def unary_operation(rule_type: Type[lexer.UnaryRule]) -> _Loader[lexer.Token, lexer.Rule]:
+    def load_unary_operation(rule_type: Type[lexer.UnaryRule]) -> _Loader[lexer.Token, lexer.Rule]:
         def load(result: parser.Result) -> lexer.Rule:
             return rule_type(load_rule(result.where_one(parser.Result.rule_name_is('operand'))))
         return load
@@ -79,11 +79,11 @@ def load_lex_rule(regex: str) -> lexer.Rule:
         'and': load_and,
         'or': load_or,
         'class': load_class,
-        'zero_or_more': unary_operation(lexer.ZeroOrMore),
-        'one_or_more': unary_operation(lexer.OneOrMore),
-        'zero_or_one': unary_operation(lexer.ZeroOrOne),
-        'until_empty': unary_operation(lexer.UntilEmpty),
-        'not': unary_operation(lexer.Not),
+        'zero_or_more': load_unary_operation(lexer.ZeroOrMore),
+        'one_or_more': load_unary_operation(lexer.OneOrMore),
+        'zero_or_one': load_unary_operation(lexer.ZeroOrOne),
+        'until_empty': load_unary_operation(lexer.UntilEmpty),
+        'not': load_unary_operation(lexer.Not),
     })
 
     load_class_part = factory({
