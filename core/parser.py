@@ -7,6 +7,9 @@ Error = stream_processor.Error
 
 
 Result = stream_processor.Result[lexer.Token]
+Rule = stream_processor.Rule[lexer.Token, lexer.Token]
+NaryRule = stream_processor.NaryRule[lexer.Token, lexer.Token]
+UnaryRule = stream_processor.UnaryRule[lexer.Token, lexer.Token]
 Ref = stream_processor.Ref[lexer.Token, lexer.Token]
 And = stream_processor.And[lexer.Token, lexer.Token]
 Or = stream_processor.Or[lexer.Token, lexer.Token]

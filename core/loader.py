@@ -1,7 +1,7 @@
 '''utils for loading lexers and parsers from text specifications'''
 
 from collections import OrderedDict
-from typing import Callable, Mapping, Type, TypeVar
+from typing import Callable, Container, Mapping, MutableMapping, Optional, Tuple, Type, TypeVar
 from . import lexer, parser, processor
 
 Error = processor.Error
@@ -24,15 +24,41 @@ def factory(
     return _loader
 
 
+def get_token(result: parser.Result) -> lexer.Token:
+    '''extract a token from a result with exactly one token in its subtree'''
+    try:
+        token = result.where_one(parser.Result.has_value).value
+    except Error as error:
+        raise Error(
+            msg=f'failed to get token from result {result}', children=[error]) from error
+    assert token
+    return token
+
+
+def get_token_value(result: parser.Result) -> str:
+    '''extract a token's value from a result'''
+    return get_token(result).value
+
+
+def get_token_rule_name(result: parser.Result) -> str:
+    '''extract a token's rule_name from a result'''
+    return get_token(result).rule_name
+
+
+def token_rule_name_is(rule_name: str) -> Callable[[parser.Result], bool]:
+    '''predicate to be used by parser.Result.where* for filtering tokens'''
+    def closure(result: parser.Result) -> bool:
+        return result.value is not None and result.value.rule_name == rule_name
+    return closure
+
+
 def load_lex_rule(regex: str) -> lexer.Rule:
     '''load a lex rule from a regex str'''
     operators = '.\\()|[]-*+?!^'
 
     def load_special(result: parser.Result) -> lexer.Rule:
-        special_char = result.where_one(
-            parser.Result.rule_name_is('special_char')).where_one(parser.Result.has_value)
-        assert special_char.value
-        value = special_char.value.value
+        value = get_token_value(result.where_one(
+            parser.Result.rule_name_is('special_char')))
         special_rules = {
             'w': lexer.Class.whitespace(),
         }
@@ -43,8 +69,7 @@ def load_lex_rule(regex: str) -> lexer.Rule:
         raise Error(msg=f'invalid special char {value}')
 
     def load_literal(result: parser.Result) -> lexer.Rule:
-        assert result.value, result
-        return lexer.Literal(result.value.value)
+        return lexer.Literal(get_token_value(result))
 
     def load_and(result: parser.Result) -> lexer.Rule:
         rule = lexer.And([load_rule(rule) for rule in result['rule']])
@@ -63,9 +88,8 @@ def load_lex_rule(regex: str) -> lexer.Rule:
         return rule
 
     def load_range(result: parser.Result) -> lexer.Rule:
-        min_result, _, max_result = result.where_n(parser.Result.has_value, 3)
-        assert min_result.value and max_result.value
-        return lexer.Range(min_result.value.value, max_result.value.value)
+        min_result, max_result = result.where_n(token_rule_name_is('char'), 2)
+        return lexer.Range(get_token_value(min_result), get_token_value(max_result))
 
     def load_unary_operation(rule_type: Type[lexer.UnaryRule]) -> _Loader[lexer.Token, lexer.Rule]:
         def load(result: parser.Result) -> lexer.Rule:
@@ -180,3 +204,83 @@ def load_lex_rule(regex: str) -> lexer.Rule:
         })
         )
     ).apply(regex))
+
+
+def load_parser(grammar: str) -> parser.Parser:
+    '''load a generic parser from a text definition'''
+
+    operators: Container[str] = ('=>', '=', ';',)
+    lexer_rules: OrderedDict[str, lexer.Rule] = OrderedDict[str, lexer.Rule]()
+
+    def operator_rule(operator: str) -> lexer.Rule:
+        if len(operator) == 1:
+            return lexer.Literal(operator)
+        return lexer.And([lexer.Literal(char) for char in operator])
+
+    def load_lexer_rules(result: parser.Result) -> None:
+        for lex_rule in result['lexer_decl']:
+            name = get_token_value(
+                lex_rule.where_one(token_rule_name_is('id')))
+            regex = get_token_value(lex_rule.where_one(
+                token_rule_name_is('lexer_val')))[1:-1]
+            lexer_rules[name] = load_lex_rule(regex)
+
+    def load_parser_rules(result: parser.Result) -> Tuple[str, Mapping[str, parser.Rule]]:
+        root_rule_name: Optional[str] = None
+        rules: MutableMapping[str, parser.Rule] = {}
+
+        def load_ref(result: parser.Result) -> parser.Rule:
+            return parser.Ref(get_token_value(result))
+
+        load_rule = factory({
+            'ref': load_ref,
+        })
+
+        for decl in result['parser_decl']:
+            name = get_token_value(decl.where_one(
+                parser.Result.rule_name_is('parser_rule_name')))
+            if root_rule_name is None:
+                root_rule_name = name
+            rules[name] = load_rule(decl.where_one(
+                parser.Result.rule_name_is('parser_rule')))
+
+        if root_rule_name is None:
+            raise Error(msg='no root rule name found')
+        return root_rule_name, rules
+
+    result = parser.Parser(
+        'root',
+        {
+            'root': parser.UntilEmpty(parser.Ref('line')),
+            'line': parser.And([parser.Ref('decl'), parser.Literal(';')]),
+            'decl': parser.Or([
+                parser.Ref('lexer_decl'),
+                parser.Ref('parser_decl'),
+            ]),
+            'lexer_decl': parser.And([
+                parser.Literal('id'),
+                parser.Literal('='),
+                parser.Literal('lexer_val'),
+            ]),
+            'parser_decl': parser.And([
+                parser.Ref('parser_rule_name'),
+                parser.Literal('=>'),
+                parser.Ref('parser_rule'),
+            ]),
+            'parser_rule_name': parser.Literal('id'),
+            'parser_rule': parser.Or([
+                parser.Ref('ref'),
+            ]),
+            'ref': parser.Literal('id'),
+        },
+        lexer.Lexer(OrderedDict({
+            '_ws': lexer.Class.whitespace(),
+            'id': load_lex_rule(r'[_a-zA-Z][_a-zA-Z0-9]*'),
+            'lexer_val': load_lex_rule(r'"(^")+"'),
+            **{operator: operator_rule(operator) for operator in operators}
+        }))
+    ).apply(grammar)
+
+    load_lexer_rules(result)
+    root_rule_name, parser_rules = load_parser_rules(result)
+    return parser.Parser(root_rule_name, parser_rules, lexer.Lexer(lexer_rules))

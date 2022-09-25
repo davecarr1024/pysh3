@@ -1,8 +1,9 @@
 '''tests for loader'''
 
+from collections import OrderedDict
 from typing import Tuple
 import unittest
-from . import loader, lexer
+from . import lexer, parser, loader
 
 if 'unittest.util' in __import__('sys').modules:
     # Show full diff in self.assertEqual.
@@ -46,3 +47,44 @@ class LoadLexRuleTest(unittest.TestCase):
             with self.subTest(regex=regex):
                 with self.assertRaises(loader.Error):
                     loader.load_lex_rule(regex)
+
+
+class LoadParserTest(unittest.TestCase):
+    '''tests for loader.load_parser'''
+
+    def test_load(self):
+        '''tests for loader.load_parser'''
+
+        for grammar, expected_parser in list[Tuple[str, parser.Parser]]([
+            (
+                r'''
+                a => b;
+                ''',
+                parser.Parser(
+                    'a',
+                    {
+                        'a': parser.Ref('b'),
+                    },
+                    lexer.Lexer(OrderedDict({}))
+                )
+            ),
+            (
+                r'''
+                l = "r";
+                a => b;
+                ''',
+                parser.Parser(
+                    'a',
+                    {
+                        'a': parser.Ref('b'),
+                    },
+                    lexer.Lexer(OrderedDict({
+                        'l': lexer.Literal('r'),
+                    }))
+                )
+            ),
+        ]):
+            with self.subTest(grammar=grammar, expected_parser=expected_parser):
+                actual_parser = loader.load_parser(grammar)
+                self.assertEqual(expected_parser, actual_parser,
+                                 f'expected {expected_parser} != actual {actual_parser}')
