@@ -215,7 +215,7 @@ def load_lex_rule(regex: str) -> lexer.Rule:
 def load_parser(grammar: str) -> parser.Parser:
     '''load a generic parser from a text definition'''
 
-    operators: Container[str] = ('=>', '=', ';',)
+    operators: Container[str] = ('=>', '=', ';', '|', '(', ')',)
     lexer_rules: OrderedDict[str, lexer.Rule] = OrderedDict[str, lexer.Rule]()
 
     def operator_rule(operator: str) -> lexer.Rule:
@@ -302,6 +302,10 @@ def load_parser(grammar: str) -> parser.Parser:
                 parser.Ref('operand'),
             ]),
             'operand': parser.Or([
+                parser.Ref('paren_rule'),
+                parser.Ref('unary_operand'),
+            ]),
+            'unary_operand': parser.Or([
                 parser.Ref('ref'),
             ]),
             'ref': parser.Literal('id'),
@@ -318,6 +322,11 @@ def load_parser(grammar: str) -> parser.Parser:
                     ])
                 )
             ]),
+            'paren_rule': parser.And([
+                parser.Literal('('),
+                parser.Ref('rule'),
+                parser.Literal(')'),
+            ])
         },
         lexer.Lexer(OrderedDict({
             '_ws': lexer.Class.whitespace(),

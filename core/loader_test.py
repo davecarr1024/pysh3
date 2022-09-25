@@ -107,6 +107,24 @@ class LoadParserTest(unittest.TestCase):
                     lexer.Lexer(OrderedDict({}))
                 )
             ),
+            (
+                r'''
+                a => (b | c) d;
+                ''',
+                parser.Parser(
+                    'a',
+                    {
+                        'a': parser.And([
+                            parser.Or([
+                                parser.Ref('b'),
+                                parser.Ref('c'),
+                            ]),
+                            parser.Ref('d'),
+                        ]),
+                    },
+                    lexer.Lexer(OrderedDict({}))
+                )
+            ),
         ]):
             with self.subTest(grammar=grammar, expected_parser=expected_parser):
                 actual_parser = loader.load_parser(grammar)
