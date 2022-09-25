@@ -204,7 +204,7 @@ class LoadParserTest(unittest.TestCase):
                 parser.Parser(
                     'a',
                     {
-                        'a': parser.Literal('b'),
+                        'a': parser.Ref('b'),
                     },
                     lexer.Lexer(OrderedDict({
                         'b': lexer.Literal('b'),

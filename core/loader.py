@@ -147,51 +147,51 @@ def load_lex_rule(regex: str) -> lexer.Rule:
             ]),
             'zero_or_more': parser.And([
                 parser.Ref('operand'),
-                parser.Literal('*'),
+                parser.Ref('*'),
             ]),
             'one_or_more': parser.And([
                 parser.Ref('operand'),
-                parser.Literal('+'),
+                parser.Ref('+'),
             ]),
             'zero_or_one': parser.And([
                 parser.Ref('operand'),
-                parser.Literal('?'),
+                parser.Ref('?'),
             ]),
             'until_empty': parser.And([
                 parser.Ref('operand'),
-                parser.Literal('!'),
+                parser.Ref('!'),
             ]),
             'not': parser.And([
-                parser.Literal('^'),
+                parser.Ref('^'),
                 parser.Ref('operand'),
             ]),
-            'literal': parser.Literal('char'),
-            'any': parser.Literal('.'),
-            'special': parser.And([parser.Literal('\\'), parser.Ref('special_char')]),
+            'literal': parser.Ref('char'),
+            'any': parser.Ref('.'),
+            'special': parser.And([parser.Ref('\\'), parser.Ref('special_char')]),
             'special_char': parser.Or([
-                parser.Literal('char'),
-                *[parser.Literal(operator) for operator in operators]
+                parser.Ref('char'),
+                *[parser.Ref(operator) for operator in operators]
             ]),
             'and': parser.And([
-                parser.Literal('('),
+                parser.Ref('('),
                 parser.OneOrMore(parser.Ref('rule')),
-                parser.Literal(')'),
+                parser.Ref(')'),
             ]),
             'or': parser.And([
-                parser.Literal('('),
+                parser.Ref('('),
                 parser.Ref('rule'),
                 parser.OneOrMore(
                     parser.And([
-                        parser.Literal('|'),
+                        parser.Ref('|'),
                         parser.Ref('rule'),
                     ])
                 ),
-                parser.Literal(')'),
+                parser.Ref(')'),
             ]),
             'class': parser.And([
-                parser.Literal('['),
+                parser.Ref('['),
                 parser.OneOrMore(parser.Ref('class_part')),
-                parser.Literal(']'),
+                parser.Ref(']'),
             ]),
             'class_part': parser.Or([
                 parser.Ref('range'),
@@ -199,9 +199,9 @@ def load_lex_rule(regex: str) -> lexer.Rule:
                 parser.Ref('special'),
             ]),
             'range': parser.And([
-                parser.Literal('char'),
-                parser.Literal('-'),
-                parser.Literal('char'),
+                parser.Ref('char'),
+                parser.Ref('-'),
+                parser.Ref('char'),
             ]),
         },
         lexer.Lexer(OrderedDict({
@@ -263,7 +263,7 @@ def load_parser(grammar: str) -> parser.Parser:
         def load_lexer_literal(result: parser.Result) -> parser.Rule:
             lexer_val = get_token_value(result)[1:-1]
             lexer_rules[lexer_val] = lexer_literal_rule(lexer_val)
-            return parser.Literal(lexer_val)
+            return parser.Ref(lexer_val)
 
         load_rule = factory({
             'ref': load_ref,
@@ -301,22 +301,22 @@ def load_parser(grammar: str) -> parser.Parser:
         'root',
         {
             'root': parser.UntilEmpty(parser.Ref('line')),
-            'line': parser.And([parser.Ref('decl'), parser.Literal(';')]),
+            'line': parser.And([parser.Ref('decl'), parser.Ref(';')]),
             'decl': parser.Or([
                 parser.Ref('lexer_decl'),
                 parser.Ref('parser_decl'),
             ]),
             'lexer_decl': parser.And([
-                parser.Literal('id'),
-                parser.Literal('='),
-                parser.Literal('lexer_val'),
+                parser.Ref('id'),
+                parser.Ref('='),
+                parser.Ref('lexer_val'),
             ]),
             'parser_decl': parser.And([
                 parser.Ref('rule_name'),
-                parser.Literal('=>'),
+                parser.Ref('=>'),
                 parser.Ref('rule'),
             ]),
-            'rule_name': parser.Literal('id'),
+            'rule_name': parser.Ref('id'),
             'rule': parser.Or([
                 parser.Ref('or'),
                 parser.Ref('and'),
@@ -334,7 +334,7 @@ def load_parser(grammar: str) -> parser.Parser:
                 parser.Ref('ref'),
                 parser.Ref('lexer_literal'),
             ]),
-            'ref': parser.Literal('id'),
+            'ref': parser.Ref('id'),
             'and': parser.And([
                 parser.Ref('operand'),
                 parser.OneOrMore(parser.Ref('operand')),
@@ -343,33 +343,33 @@ def load_parser(grammar: str) -> parser.Parser:
                 parser.Ref('operand'),
                 parser.OneOrMore(
                     parser.And([
-                        parser.Literal('|'),
+                        parser.Ref('|'),
                         parser.Ref('operand'),
                     ])
                 )
             ]),
             'paren_rule': parser.And([
-                parser.Literal('('),
+                parser.Ref('('),
                 parser.Ref('rule'),
-                parser.Literal(')'),
+                parser.Ref(')'),
             ]),
             'zero_or_more': parser.And([
                 parser.Ref('unary_operand'),
-                parser.Literal('*'),
+                parser.Ref('*'),
             ]),
             'one_or_more': parser.And([
                 parser.Ref('unary_operand'),
-                parser.Literal('+'),
+                parser.Ref('+'),
             ]),
             'zero_or_one': parser.And([
                 parser.Ref('unary_operand'),
-                parser.Literal('?'),
+                parser.Ref('?'),
             ]),
             'until_empty': parser.And([
                 parser.Ref('unary_operand'),
-                parser.Literal('!'),
+                parser.Ref('!'),
             ]),
-            'lexer_literal': parser.Literal('lexer_val'),
+            'lexer_literal': parser.Ref('lexer_val'),
         },
         lexer.Lexer(OrderedDict({
             '_ws': lexer.Class.whitespace(),

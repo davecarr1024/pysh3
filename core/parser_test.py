@@ -18,7 +18,7 @@ class ParserTest(
             'root',
             {
                 'root': parser.UntilEmpty(parser.Ref('expr')),
-                'expr': parser.Or([parser.Literal('id')]),
+                'expr': parser.Or([parser.Ref('id')]),
             },
             lexer.Lexer(collections.OrderedDict({
                 '_ws': lexer.Class.whitespace(),

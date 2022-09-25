@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 import string
-from typing import Container, MutableSequence, OrderedDict
+from typing import Container, Mapping, MutableSequence, OrderedDict
 from . import stream_processor
 
 
@@ -98,10 +98,17 @@ class Lexer(stream_processor.Processor[Char, Char]):
 
     def __str__(self) -> str:
         output = ''
-        for name, rule in self.rules.items():
-            if not name.startswith(_INTERNAL_PREFIX):
-                output += f'\n{name} = "{rule}";'
+        for name, rule in self.lexer_rules().items():
+            output += f'\n{name} = "{rule}";'
         return output
+
+    def lexer_rules(self) -> Mapping[str, Rule]:
+        '''get the set of rules this lexer was constructed with'''
+        return {
+            name: rule
+            for name, rule in self.rules.items()
+            if not name.startswith(_INTERNAL_PREFIX)
+        }
 
     @staticmethod
     def _convert_input(input_str: str) -> CharStream:

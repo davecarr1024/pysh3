@@ -7,10 +7,11 @@ Error = stream_processor.Error
 
 
 Result = stream_processor.Result[lexer.Token]
+State = stream_processor.State[lexer.Token, lexer.Token]
+ResultAndState = stream_processor.ResultAndState[lexer.Token, lexer.Token]
 Rule = stream_processor.Rule[lexer.Token, lexer.Token]
 NaryRule = stream_processor.NaryRule[lexer.Token, lexer.Token]
 UnaryRule = stream_processor.UnaryRule[lexer.Token, lexer.Token]
-Ref = stream_processor.Ref[lexer.Token, lexer.Token]
 And = stream_processor.And[lexer.Token, lexer.Token]
 Or = stream_processor.Or[lexer.Token, lexer.Token]
 ZeroOrMore = stream_processor.ZeroOrMore[lexer.Token, lexer.Token]
@@ -25,6 +26,13 @@ class Parser(stream_processor.Processor[lexer.Token, lexer.Token]):
     '''generic syntactic text parser'''
 
     lexer: lexer.Lexer
+
+    def __post_init__(self):
+        shared_rule_names = set(self.rules.keys()).intersection(
+            self.lexer.lexer_rules().keys())
+        if shared_rule_names:
+            raise Error(
+                msg=f'shared rule names between parser and lexer {shared_rule_names}')
 
     def __str__(self) -> str:
         def str_rule(name: str) -> str:
@@ -46,19 +54,28 @@ class Parser(stream_processor.Processor[lexer.Token, lexer.Token]):
 
 
 @dataclass(frozen=True)
-class Literal(_HeadRule):
-    '''rule for matching tokens by rule_name'''
+class Ref(Rule):
+    '''rule for matching parser or lexer rules by name'''
 
     rule_name: str
 
     def __str__(self) -> str:
         return self.rule_name
 
-    def pred(self, head: lexer.Token) -> bool:
-        return head.rule_name == self.rule_name
-
-    def result(self, head: lexer.Token) -> Result:
-        return Result(value=head)
+    def apply(self, state: State) -> ResultAndState:
+        assert isinstance(state.processor, Parser)
+        lexer_rules = state.processor.lexer.lexer_rules()
+        if self.rule_name in lexer_rules:
+            if state.value.empty:
+                raise Error(
+                    msg=f'failed to match parser literal {self}: empty stream')
+            if state.value.head.rule_name != self.rule_name:
+                raise Error(
+                    msg=f'failed to match parser literal {self} to head {state.value.head}')
+            return ResultAndState(
+                Result(value=state.value.head),
+                state.with_value(state.value.tail))
+        return state.processor.apply_rule_name_to_state(self.rule_name, state).as_child_result()
 
 
 @dataclass(frozen=True)
