@@ -26,7 +26,7 @@ def factory(
 
 def load_lex_rule(regex: str) -> lexer.Rule:
     '''load a lex rule from a regex str'''
-    operators = '.\\()|'
+    operators = '.\\()|[]-'
 
     def load_special(result: parser.Result) -> lexer.Rule:
         special_char = result.where_one(
@@ -55,12 +55,31 @@ def load_lex_rule(regex: str) -> lexer.Rule:
     def load_or(result: parser.Result) -> lexer.Rule:
         return lexer.Or([load_rule(rule) for rule in result['rule']])
 
+    def load_class(result: parser.Result) -> lexer.Rule:
+        rule = lexer.Or([load_class_part(rule)
+                        for rule in result['class_part']])
+        if len(rule.children) == 1:
+            return rule.children[0]
+        return rule
+
+    def load_range(result: parser.Result) -> lexer.Rule:
+        min_result, _, max_result = result.where_n(parser.Result.has_value, 3)
+        assert min_result.value and max_result.value
+        return lexer.Range(min_result.value.value, max_result.value.value)
+
     load_rule = factory({
         'literal': load_literal,
         'any': lambda _: lexer.Any(),
         'special': load_special,
         'and': load_and,
         'or': load_or,
+        'class': load_class,
+    })
+
+    load_class_part = factory({
+        'literal': load_literal,
+        'special': load_special,
+        'range': load_range,
     })
 
     return load_and(parser.Parser(
@@ -74,6 +93,7 @@ def load_lex_rule(regex: str) -> lexer.Rule:
                 parser.Ref('special'),
                 parser.Ref('and'),
                 parser.Ref('or'),
+                parser.Ref('class'),
             ]),
             'literal': parser.Literal('char'),
             'any': parser.Literal('.'),
@@ -97,6 +117,21 @@ def load_lex_rule(regex: str) -> lexer.Rule:
                     ])
                 ),
                 parser.Literal(')'),
+            ]),
+            'class': parser.And([
+                parser.Literal('['),
+                parser.OneOrMore(parser.Ref('class_part')),
+                parser.Literal(']'),
+            ]),
+            'class_part': parser.Or([
+                parser.Ref('range'),
+                parser.Ref('literal'),
+                parser.Ref('special'),
+            ]),
+            'range': parser.And([
+                parser.Literal('char'),
+                parser.Literal('-'),
+                parser.Literal('char'),
             ]),
         },
         lexer.Lexer(OrderedDict({

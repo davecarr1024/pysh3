@@ -88,7 +88,7 @@ class HeadRule(Rule[_ResultValue, _Item], ABC):
         head: _Item = state.value.head
         if not self.pred(head):
             raise Error(
-                msg=f'failed pred for head rule {self} with head {head}')
+                msg=f'failed pred for head rule {self} at {list(state.value)[:5]}')
         return ResultAndState[_ResultValue, _Item](
             self.result(head),
             state.with_value(state.value.tail)

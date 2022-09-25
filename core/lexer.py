@@ -51,6 +51,9 @@ class Token:
     value: str
     position: Position
 
+    def __repr__(self) -> str:
+        return repr(self.value)
+
 
 TokenStream = stream_processor.Stream[Token]
 

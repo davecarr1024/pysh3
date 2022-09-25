@@ -23,6 +23,10 @@ def _repr(class_name: str, **fields: Any) -> str:
     return f'{class_name}({fields_str})'
 
 
+_ResultValue = TypeVar('_ResultValue')
+_StateValue = TypeVar('_StateValue')
+
+
 @dataclass(frozen=True, repr=False)
 class Error(Exception):
     '''processor error'''
@@ -32,16 +36,18 @@ class Error(Exception):
     children: Sequence['Error'] = field(
         kw_only=True, default_factory=list)
 
-    def __repr__(self) -> str:
-        return _repr(
-            self.__class__.__name__,
-            msg=self.msg,
-            rule_name=self.rule_name,
-            children=self.children or None,
-        )
-
     def __str__(self) -> str:
-        return repr(self)
+        def _repr(error: Error, indent: int = 0) -> str:
+            output = f'\n{"  " * indent}'
+            if error.rule_name is not None:
+                output += error.rule_name
+            if error.msg is not None:
+                output += f'({error.msg})'
+            for child in error.children:
+                output += _repr(child, indent+1)
+            return output
+
+        return _repr(self)
 
     def with_rule_name(self, rule_name: str) -> 'Error':
         '''annotate this error with a rule_name'''
@@ -50,10 +56,6 @@ class Error(Exception):
     def as_child_error(self) -> 'Error':
         '''returns self nested in another error, to be annotated'''
         return self.__class__(children=[self])
-
-
-_ResultValue = TypeVar('_ResultValue')
-_StateValue = TypeVar('_StateValue')
 
 
 @final
