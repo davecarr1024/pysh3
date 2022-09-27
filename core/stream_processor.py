@@ -2,11 +2,13 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Iterable, Iterator, Sequence, TypeVar
+from typing import Iterable, Iterator, Sequence, Type, TypeVar
 from . import processor
 
 
-Error = processor.Error
+class Error(processor.Error):
+    '''stream_processor error'''
+
 
 _ResultValue = TypeVar('_ResultValue')
 _Item = TypeVar('_Item')
@@ -49,11 +51,14 @@ class Stream(Iterable[_Item]):
         return Stream[_Item](result.all_values())
 
 
+class StateError(Error, processor.StateError[Stream[_Item]]):
+    '''stream_processor error with state'''
+
+
 Result = processor.Result[_ResultValue]
 State = processor.State[_ResultValue, Stream[_Item]]
 ResultAndState = processor.ResultAndState[_ResultValue, Stream[_Item]]
 Rule = processor.Rule[_ResultValue, Stream[_Item]]
-Processor = processor.Processor[_ResultValue, Stream[_Item]]
 Ref = processor.Ref[_ResultValue, Stream[_Item]]
 And = processor.And[_ResultValue, Stream[_Item]]
 Or = processor.Or[_ResultValue, Stream[_Item]]
@@ -62,6 +67,14 @@ OneOrMore = processor.OneOrMore[_ResultValue, Stream[_Item]]
 ZeroOrOne = processor.ZeroOrOne[_ResultValue, Stream[_Item]]
 NaryRule = processor.NaryRule[_ResultValue, Stream[_Item]]
 UnaryRule = processor.UnaryRule[_ResultValue, Stream[_Item]]
+
+
+class Processor(processor.Processor[_ResultValue, Stream[_Item]]):
+    '''generic stream processor'''
+
+    @staticmethod
+    def error_type() -> Type[Error]:
+        return Error
 
 
 class UntilEmpty(processor.While[_ResultValue, Stream[_Item]]):
@@ -85,12 +98,16 @@ class HeadRule(Rule[_ResultValue, _Item], ABC):
     def apply(self, state: State[_ResultValue, _Item]) -> ResultAndState[_ResultValue, _Item]:
         '''process the head value and return the result'''
         if state.value.empty:
-            raise Error(
-                msg=f'unable to apply head rule {self} to empty state {state}')
+            raise StateError(
+                state_value=state.value,
+                msg=f'failed {self}: empty stream',
+            )
         head: _Item = state.value.head
         if not self.pred(head):
-            raise Error(
-                msg=f'failed pred for head rule {self} at {list(state.value)[:5]}')
+            raise StateError(
+                state_value=state.value,
+                msg=f'failed {self}',
+            )
         return ResultAndState[_ResultValue, _Item](
             self.result(head),
             state.with_value(state.value.tail)

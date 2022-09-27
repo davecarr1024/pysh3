@@ -1,7 +1,7 @@
 '''test for stream_processor'''
 
 from dataclasses import dataclass
-from typing import Generic, Sequence, TypeVar
+from typing import Generic, Sequence, Tuple, TypeVar
 import unittest
 from . import processor_test, stream_processor
 
@@ -76,10 +76,16 @@ class LiteralTest(_StreamProcessorTestCase):
 
     def test_apply_fail(self):
         '''tests for _Literal.apply failures'''
-        with self.assertRaises(stream_processor.Error):
-            self.processor.apply_root_to_state_value(_Stream([2]))
-        with self.assertRaises(stream_processor.Error):
-            self.processor.apply_root_to_state_value(_Stream([]))
+        for values, expected_error in list[Tuple[Sequence[int], stream_processor.Error]]([
+            ([], stream_processor.StateError(
+                msg='failed _Literal(value=1): empty stream', state_value=_Stream([]))),
+            ([2], stream_processor.StateError(
+                msg='failed _Literal(value=1)', state_value=_Stream([2]))),
+        ]):
+            with self.subTest(values=values, expected_error=expected_error):
+                with self.assertRaises(stream_processor.Error) as ctx:
+                    self.processor.apply_root_to_state_value(_Stream(values))
+                self.assertEqual(expected_error, ctx.exception)
 
 
 class UntilEmptyTest(_StreamProcessorTestCase):

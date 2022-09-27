@@ -2,11 +2,12 @@
 
 from dataclasses import dataclass
 import string
-from typing import Container, Mapping, MutableSequence, OrderedDict
+from typing import Container, Mapping, MutableSequence, OrderedDict, Type
 from . import stream_processor
 
 
-Error = stream_processor.Error
+class Error(stream_processor.Error):
+    '''lexer error'''
 
 
 @dataclass(frozen=True)
@@ -38,6 +39,10 @@ class Char:
     def __post_init__(self):
         if len(self.value) != 1:
             raise Error(msg=f'invalid ResultValue value {self.value}')
+
+
+class StateError(stream_processor.StateError[Char]):
+    '''lexer error with state'''
 
 
 CharStream = stream_processor.Stream[Char]
@@ -102,6 +107,10 @@ class Lexer(stream_processor.Processor[Char, Char]):
             output += f'\n{name} = "{rule}";'
         return output
 
+    @staticmethod
+    def error_type() -> Type[Error]:
+        return Error
+
     def lexer_rules(self) -> Mapping[str, Rule]:
         '''get the set of rules this lexer was constructed with'''
         return {
@@ -134,14 +143,9 @@ class Lexer(stream_processor.Processor[Char, Char]):
 
     def apply(self, input_str: str) -> TokenStream:
         '''split an input str into a tokens'''
-        try:
-            return self._convert_result(
-                self.apply_root_to_state_value(
-                    self._convert_input(input_str)))
-        except stream_processor.Error as error:
-            raise Error(
-                msg=f'failed to apply regex {self} to input {repr(input_str)}',
-                children=[error]) from error
+        return self._convert_result(
+            self.apply_root_to_state_value(
+                self._convert_input(input_str)))
 
 
 class _HeadRule(stream_processor.HeadRule[Char, Char]):
@@ -197,8 +201,10 @@ class Not(UnaryRule):
                 state.with_value(state.value.tail)
             )
         else:
-            raise Error(
-                msg=f'Not {self} successfully applied child {self.child}')
+            raise StateError(
+                state_value=state.value,
+                msg=f'Not {self} successfully applied child {self.child}',
+            )
 
 
 @dataclass(frozen=True)
