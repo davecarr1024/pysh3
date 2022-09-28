@@ -77,10 +77,24 @@ class LiteralTest(_StreamProcessorTestCase):
     def test_apply_fail(self):
         '''tests for _Literal.apply failures'''
         for values, expected_error in list[Tuple[Sequence[int], stream_processor.Error]]([
-            ([], stream_processor.StateError(
-                msg='failed _Literal(value=1): empty stream', state_value=_Stream([]))),
-            ([2], stream_processor.StateError(
-                msg='failed _Literal(value=1)', state_value=_Stream([2]))),
+            (
+                [],
+                stream_processor.RuleError(
+                    rule=_Literal(1),
+                    state=self.state(_Stream([])),
+                    msg='failed _Literal(value=1): empty stream',
+                    rule_name='a',
+                )
+            ),
+            (
+                [2],
+                stream_processor.RuleError(
+                    rule=_Literal(1),
+                    state=self.state(_Stream([2])),
+                    msg='failed _Literal(value=1)',
+                    rule_name='a',
+                )
+            ),
         ]):
             with self.subTest(values=values, expected_error=expected_error):
                 with self.assertRaises(stream_processor.Error) as ctx:

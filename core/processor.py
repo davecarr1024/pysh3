@@ -28,8 +28,21 @@ _ResultValue = TypeVar('_ResultValue')
 _StateValue = TypeVar('_StateValue')
 
 
+class AbstractError(Exception, ABC):
+    '''abstract error'''
+
+    @abstractmethod
+    def with_rule_name(self, rule_name: str) -> 'AbstractError':
+        '''return this error with the given rule_name'''
+
+    @property
+    @abstractmethod
+    def empty(self) -> bool:
+        '''is this error trivially empty'''
+
+
 @dataclass(frozen=True, kw_only=True)
-class Error(Exception):
+class Error(AbstractError):
     '''processor error'''
 
     msg: Optional[str] = field(default=None)
@@ -39,9 +52,14 @@ class Error(Exception):
 
     def __str__(self) -> str:
         def _str(error: Error, indent: int = 0) -> str:
-            output = error.str_line(indent)
-            for child in error.children:
-                output += _str(child, indent+1)
+            output = ''
+            if error.empty:
+                for child in error.children:
+                    output += _str(child, indent)
+            else:
+                output += error.str_line(indent)
+                for child in error.children:
+                    output += _str(child, indent+1)
             return output
 
         return _str(self)
@@ -56,29 +74,61 @@ class Error(Exception):
         return output
 
     def with_rule_name(self, rule_name: str) -> 'Error':
-        '''annotate this error with a rule_name'''
         return self.__class__(msg=self.msg, rule_name=rule_name, children=self.children)
 
     def as_child_error(self) -> 'Error':
         '''returns self nested in another error, to be annotated'''
         return self.__class__(children=[self])
 
+    @property
+    def empty(self) -> bool:
+        '''is this local error empty'''
+        return self.msg is None and self.rule_name is None
+
 
 @dataclass(frozen=True, kw_only=True)
-class StateError(Error, Generic[_StateValue]):
-    '''error with state value'''
+class StateError(Error, Generic[_ResultValue, _StateValue]):
+    '''error with state'''
 
-    state_value: _StateValue
+    state: 'State[_ResultValue,_StateValue]'
 
     def str_line(self, indent: int) -> str:
-        return super().str_line(indent) + f'@{self.state_value}'
+        return f'{super().str_line(indent)} at {self.state.value}'
 
     def with_rule_name(self, rule_name: str) -> Error:
         return self.__class__(
+            rule_name=rule_name,
+            state=self.state,
             msg=self.msg,
-            rule_name=self.rule_name,
-            state_value=self.state_value,
-            children=self.children)
+            children=self.children,
+        )
+
+    @property
+    def empty(self) -> bool:
+        return False
+
+
+@dataclass(frozen=True, kw_only=True)
+class RuleError(StateError[_ResultValue, _StateValue]):
+    '''rule error'''
+
+    rule: 'Rule[_ResultValue, _StateValue]'
+
+    def str_line(self, indent: int) -> str:
+        return super().str_line(indent) + f' for {self.rule}'
+
+    def with_rule_name(self, rule_name: str) -> Error:
+        return self.__class__(
+            rule_name=rule_name,
+            rule=self.rule,
+            state=self.state,
+            msg=self.msg,
+            children=self.children,
+        )
+
+    @property
+    def empty(self) -> bool:
+        return False
 
 
 @final
@@ -307,8 +357,7 @@ class Processor(Generic[_ResultValue, _StateValue]):
         '''applies the rule with the given name to the given state'''
         try:
             if rule_name not in self.rules:
-                raise StateError(
-                    msg=f'unknown rule {rule_name}', state_value=state.value)
+                raise StateError(msg=f'unknown rule {rule_name}', state=state)
             try:
                 return self.rules[rule_name].apply(state).with_rule_name(rule_name).simplify()
             except Error as error:
@@ -347,14 +396,7 @@ class Ref(Rule[_ResultValue, _StateValue]):
     def apply(self, state: State[_ResultValue, _StateValue]
               ) -> ResultAndState[_ResultValue, _StateValue]:
         '''lookup the referrant and apply it to state'''
-        try:
-            return state.processor.apply_rule_name_to_state(self.value, state).as_child_result()
-        except Error as error:
-            raise StateError(
-                msg=f'failed to find ref {self}',
-                state_value=state.value,
-                children=[error],
-            ) from error
+        return state.processor.apply_rule_name_to_state(self.value, state).as_child_result()
 
 
 @dataclass(frozen=True)
@@ -382,8 +424,11 @@ class And(NaryRule[_ResultValue, _StateValue]):
                 child_results.append(child_result_and_state.result)
                 child_state = child_result_and_state.state
             except Error as error:
-                raise StateError(state_value=state.value,
-                                 children=[error]) from error
+                raise RuleError(
+                    rule=self,
+                    state=state,
+                    children=[error],
+                ) from error
         return ResultAndState[_ResultValue, _StateValue](
             Result[_ResultValue](children=child_results),
             child_state
@@ -406,7 +451,11 @@ class Or(NaryRule[_ResultValue, _StateValue]):
                 return child.apply(state).as_child_result()
             except Error as error:
                 child_errors.append(error)
-        raise StateError(children=child_errors, state_value=state.value)
+        raise RuleError(
+            rule=self,
+            state=state,
+            children=child_errors,
+        )
 
 
 @dataclass(frozen=True)
@@ -453,8 +502,11 @@ class OneOrMore(UnaryRule[_ResultValue, _StateValue]):
                 child_result_and_state.result]
             state = child_result_and_state.state
         except Error as error:
-            raise StateError(state_value=state.value,
-                             children=[error]) from error
+            raise RuleError(
+                rule=self,
+                state=state,
+                children=[error],
+            ) from error
         while True:
             try:
                 child_result_and_state = self.child.apply(state)
@@ -497,8 +549,11 @@ class While(UnaryRule[_ResultValue, _StateValue], ABC):
             try:
                 child_result_and_state = self.child.apply(state)
             except Error as error:
-                raise StateError(state_value=state.value,
-                                 children=[error]) from error
+                raise RuleError(
+                    rule=self,
+                    state=state,
+                    children=[error],
+                ) from error
             child_results.append(child_result_and_state.result)
             state = child_result_and_state.state
         return ResultAndState[_ResultValue, _StateValue](

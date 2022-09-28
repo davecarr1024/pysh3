@@ -3,14 +3,14 @@
 from dataclasses import dataclass
 import string
 from typing import Container, Mapping, MutableSequence, OrderedDict, Type
-from . import stream_processor
+from . import stream_processor, processor
 
 
 class Error(stream_processor.Error):
     '''lexer error'''
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, order=True)
 class Position:
     '''the position of a token in a input document'''
 
@@ -41,8 +41,35 @@ class Char:
             raise Error(msg=f'invalid ResultValue value {self.value}')
 
 
-class StateError(stream_processor.StateError[Char]):
+class StateError(stream_processor.StateError[Char, Char]):
     '''lexer error with state'''
+
+    def str_line(self, indent: int) -> str:
+        output = f'\n{"  "*indent}'
+        if self.rule_name:
+            output += f'{self.rule_name} '
+        if self.msg:
+            output += f'({self.msg}) '
+        if not self.state.value.empty:
+            output += repr(''.join([char.value for char in self.state.value.items[:10]]))
+            output += f'@{self.state.value.head.position}'
+        return output
+
+
+class RuleError(StateError, stream_processor.RuleError[Char, Char]):
+    '''lexer error for rule'''
+
+    def str_line(self, indent: int) -> str:
+        output = f'\n{"  "*indent}'
+        if self.rule_name:
+            output += f'{self.rule_name} '
+        output += f'for {self.rule} '
+        if self.msg:
+            output += f'({self.msg}) '
+        if not self.state.value.empty:
+            output += repr(''.join([char.value for char in self.state.value.items[:10]]))
+            output += f'@{self.state.value.head.position}'
+        return output
 
 
 CharStream = stream_processor.Stream[Char]
@@ -195,14 +222,15 @@ class Not(UnaryRule):
     def apply(self, state: State) -> ResultAndState:
         try:
             self.child.apply(state)
-        except Error:
+        except processor.Error:
             return ResultAndState(
                 Result(value=state.value.head),
                 state.with_value(state.value.tail)
             )
         else:
-            raise StateError(
-                state_value=state.value,
+            raise RuleError(
+                rule=self,
+                state=state,
                 msg=f'Not {self} successfully applied child {self.child}',
             )
 

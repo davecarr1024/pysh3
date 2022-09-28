@@ -26,6 +26,9 @@ class Stream(Iterable[_Item]):
     def __len__(self) -> int:
         return len(self._items)
 
+    def __str__(self) -> str:
+        return str(self.items)
+
     @property
     def empty(self) -> bool:
         '''is this stream empty'''
@@ -45,14 +48,23 @@ class Stream(Iterable[_Item]):
             raise Error(msg=f'getting tail from empty state {self}')
         return Stream[_Item](self._items[1:])
 
+    @property
+    def items(self) -> 'Sequence[_Item]':
+        '''items'''
+        return self._items
+
     @staticmethod
     def from_result(result: processor.Result[_Item]) -> 'Stream[_Item]':
         '''convert all results in the given result to a stream'''
         return Stream[_Item](result.all_values())
 
 
-class StateError(Error, processor.StateError[Stream[_Item]]):
-    '''stream_processor error with state'''
+class StateError(Error, processor.StateError[_ResultValue, Stream[_Item]]):
+    '''error with state'''
+
+
+class RuleError(StateError[_ResultValue, _Item], processor.RuleError[_ResultValue, Stream[_Item]]):
+    '''error for rule'''
 
 
 Result = processor.Result[_ResultValue]
@@ -98,14 +110,16 @@ class HeadRule(Rule[_ResultValue, _Item], ABC):
     def apply(self, state: State[_ResultValue, _Item]) -> ResultAndState[_ResultValue, _Item]:
         '''process the head value and return the result'''
         if state.value.empty:
-            raise StateError(
-                state_value=state.value,
+            raise RuleError(
+                rule=self,
+                state=state,
                 msg=f'failed {self}: empty stream',
             )
         head: _Item = state.value.head
         if not self.pred(head):
-            raise StateError(
-                state_value=state.value,
+            raise RuleError(
+                rule=self,
+                state=state,
                 msg=f'failed {self}',
             )
         return ResultAndState[_ResultValue, _Item](

@@ -175,16 +175,14 @@ class LexerTest(_StreamProcessorTestCase):
 
     def test_apply_fail(self):
         '''test failing apply cases'''
-        for input_str, expected_error in list[Tuple[str, lexer.Error]]([
-            ('z', lexer.Error()),
-            ('hz', lexer.Error()),
-            ('i', lexer.Error()),
+        for input_str in list[str]([
+            'z',
+            'hh',
+            'i',
         ]):
-            with self.subTest(input_str=input_str, expected_error=expected_error):
-                with self.assertRaises(lexer.Error) as ctx:
+            with self.subTest(input_str=input_str):
+                with self.assertRaises(lexer.Error):
                     self.processor.apply(input_str)
-                # self.assertEqual(expected_error, ctx.exception,
-                #                  str(ctx.exception))
 
     def test_invalid_range(self):
         '''test for invalid values for lexer.Range'''
