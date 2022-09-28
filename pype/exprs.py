@@ -17,7 +17,7 @@ class Result:
     is_return: bool = False
 
 
-class Expr(ABC):
+class Expr(ABC):  # pylint: disable=too-few-public-methods
     '''expr'''
 
     @abstractmethod
