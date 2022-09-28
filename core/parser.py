@@ -1,9 +1,12 @@
 '''syntactic text parser'''
 
 from dataclasses import dataclass
+from typing import Type
 from . import lexer, stream_processor
 
-Error = stream_processor.Error
+
+class Error(stream_processor.Error):
+    '''parser error'''
 
 
 Result = stream_processor.Result[lexer.Token]
@@ -21,11 +24,46 @@ UntilEmpty = stream_processor.UntilEmpty[lexer.Token, lexer.Token]
 _HeadRule = stream_processor.HeadRule[lexer.Token, lexer.Token]
 
 
+class StateError(Error, stream_processor.StateError[lexer.Token, lexer.Token]):  # pylint: disable=too-many-ancestors
+    '''parser error with state'''
+
+    def str_line(self, indent: int) -> str:
+        output = f'\n{"  "*indent}'
+        if self.rule_name:
+            output += f'{self.rule_name} '
+        if self.msg:
+            output += f'({self.msg}) '
+        if not self.state.value.empty:
+            output += repr(''.join([char.value for char in self.state.value.items[:10]]))
+            output += f'@{self.state.value.head.position}'
+        return output
+
+
+class RuleError(StateError, stream_processor.RuleError[lexer.Token, lexer.Token]):  # pylint: disable=too-many-ancestors
+    '''parser error for rule'''
+
+    def str_line(self, indent: int) -> str:
+        output = f'\n{"  "*indent}'
+        if self.rule_name:
+            output += f'{self.rule_name} '
+        output += f'for {self.rule} '
+        if self.msg:
+            output += f'({self.msg}) '
+        if not self.state.value.empty:
+            output += repr(''.join([char.value for char in self.state.value.items[:10]]))
+            output += f'@{self.state.value.head.position}'
+        return output
+
+
 @dataclass(frozen=True)
 class Parser(stream_processor.Processor[lexer.Token, lexer.Token]):
     '''generic syntactic text parser'''
 
     lexer: lexer.Lexer
+
+    @staticmethod
+    def error_type() -> Type[Error]:
+        return Error
 
     def __post_init__(self):
         shared_rule_names = set(self.rules.keys()).intersection(
@@ -46,11 +84,7 @@ class Parser(stream_processor.Processor[lexer.Token, lexer.Token]):
 
     def apply(self, input_str: str) -> Result:
         '''apply the grammar to the input text and return the structured result'''
-        try:
-            char_stream = self.lexer.apply(input_str)
-        except lexer.Error as error:
-            raise Error(msg='lex error', children=[error]) from error
-        return self.apply_root_to_state_value(char_stream)
+        return self.apply_root_to_state_value(self.lexer.apply(input_str))
 
 
 @dataclass(frozen=True)
@@ -67,11 +101,17 @@ class Ref(Rule):
         lexer_rules = state.processor.lexer.lexer_rules()
         if self.rule_name in lexer_rules:
             if state.value.empty:
-                raise Error(
-                    msg=f'failed to match parser literal {self}: empty stream')
+                raise RuleError(
+                    rule=self,
+                    state=state,
+                    msg=f'failed to match parser literal {self}: empty stream',
+                )
             if state.value.head.rule_name != self.rule_name:
-                raise Error(
-                    msg=f'failed to match parser literal {self} to head {state.value.head}')
+                raise RuleError(
+                    rule=self,
+                    state=state,
+                    msg=f'failed to match parser literal {self}',
+                )
             return ResultAndState(
                 Result(value=state.value.head),
                 state.with_value(state.value.tail))
