@@ -41,7 +41,7 @@ class Char:
             raise Error(msg=f'invalid ResultValue value {self.value}')
 
 
-class StateError(stream_processor.StateError[Char, Char]):
+class StateError(Error, stream_processor.StateError[Char, Char]):  # pylint: disable=too-many-ancestors
     '''lexer error with state'''
 
     def str_line(self, indent: int) -> str:
@@ -56,7 +56,7 @@ class StateError(stream_processor.StateError[Char, Char]):
         return output
 
 
-class RuleError(StateError, stream_processor.RuleError[Char, Char]):
+class RuleError(StateError, stream_processor.RuleError[Char, Char]):  # pylint: disable=too-many-ancestors
     '''lexer error for rule'''
 
     def str_line(self, indent: int) -> str:

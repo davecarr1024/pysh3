@@ -59,11 +59,11 @@ class Stream(Iterable[_Item]):
         return Stream[_Item](result.all_values())
 
 
-class StateError(Error, processor.StateError[_ResultValue, Stream[_Item]]):
+class StateError(Error, processor.StateError[_ResultValue, Stream[_Item]]):  # pylint: disable=too-many-ancestors
     '''error with state'''
 
 
-class RuleError(StateError[_ResultValue, _Item], processor.RuleError[_ResultValue, Stream[_Item]]):
+class RuleError(StateError[_ResultValue, _Item], processor.RuleError[_ResultValue, Stream[_Item]]):  # pylint: disable=too-many-ancestors
     '''error for rule'''
 
 
