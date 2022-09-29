@@ -178,7 +178,7 @@ class Lexer(processor.Processor[Char, CharStream]):
 
 
 @dataclass(frozen=True)
-class Class(Rule):
+class Class(stream.HeadRule[Char, Char]):
     '''lex rule matching set of chars'''
 
     values: Sequence[str]
@@ -187,12 +187,11 @@ class Class(Rule):
         if not all(len(c) == 1 for c in self.values):
             raise Error(msg=f'invalid class values {repr(self.values)}')
 
-    def apply(self, state: State) -> ResultAndState:
-        if state.value.empty:
-            raise RuleError(rule=self, state=state, msg='empty state')
-        if state.value.head.value not in self.values:
-            raise RuleError(rule=self, state=state, msg='class not found')
-        return ResultAndState(Result(value=state.value.head), state.with_value(state.value.tail))
+    def result(self, head: Char) -> Result:
+        if not head.value in self.values:
+            raise Error(
+                msg=f'value {head.value} not in class values {self.values}')
+        return Result(value=head)
 
     @staticmethod
     def whitespace() -> 'Class':
@@ -247,17 +246,7 @@ class Not(UnaryRule):
             )
 
 
-@dataclass(frozen=True)
-class Any(Rule):
-    '''lex rule matching anything'''
-
-    def __str__(self) -> str:
-        return '.'
-
-    def apply(self, state: State) -> ResultAndState:
-        if state.value.empty:
-            raise RuleError(rule=self, state=state, msg='empty stream')
-        return ResultAndState(Result(value=state.value.head), state.with_value(state.value.tail))
+Any = stream.Any[Char]
 
 
 @dataclass(frozen=True)

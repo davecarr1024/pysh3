@@ -94,7 +94,7 @@ class Ref(Rule):
 
 
 @dataclass(frozen=True)
-class Any(Rule):
+class Any(Rule):  # pylint: disable=duplicate-code
     '''rule for matching any token'''
 
     def __str__(self) -> str:

@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Iterable, Iterator, MutableSequence, Sequence, TypeVar
+from typing import Generic, Iterable, Iterator, MutableSequence, Sequence, TypeVar
 from . import processor
 
 
@@ -92,3 +92,64 @@ class UntilEmpty(processor.UnaryRule[_ResultValue, _StateValue]):
             child_results.append(child_result_and_state.result)
             child_state = child_result_and_state.state
         return processor.ResultAndState(processor.Result(children=child_results), child_state)
+
+
+_Item_contra = TypeVar('_Item_contra', contravariant=True)
+
+
+class HeadRule(
+    Generic[_ResultValue, _Item_contra],
+    processor.Rule[_ResultValue, Stream[_Item_contra]],
+):
+    '''rule for operating on head of a stream'''
+
+    @abstractmethod
+    def result(self, head: _Item_contra) -> processor.Result[_ResultValue]:
+        '''convert head to a result'''
+
+    def apply(
+        self,
+        state: processor.State[_ResultValue, Stream[_Item_contra]],
+    ) -> processor.ResultAndState[_ResultValue, Stream[_Item_contra]]:
+        if state.value.empty:
+            raise processor.RuleError(
+                rule=self, state=state, msg='empty stream')
+        try:
+            return processor.ResultAndState(
+                self.result(state.value.head),
+                state.with_value(state.value.tail))
+        except processor.Error as error:
+            raise processor.RuleError(
+                rule=self, state=state, children=[error]) from error
+
+
+@dataclass(frozen=True)
+class Any(HeadRule[_Item_contra, _Item_contra]):
+    '''head rule that matches any head'''
+
+    def __str__(self) -> str:
+        return '.'
+
+    def result(self, head: _Item_contra) -> processor.Result[_Item_contra]:
+        return processor.Result[_Item_contra](value=head)
+
+# @dataclass(frozen=True)
+# class TestItem:
+#     value: int
+
+
+# @dataclass(frozen=True)
+# class TestResultValue:
+#     value: str
+
+
+# class TestStream(Stream[TestItem]):
+#     ...
+
+
+# class TestRule(HeadRule[TestResultValue, TestItem]):
+#     def result(self, head: TestItem) -> processor.Result[TestResultValue]:
+#         return processor.Result(value=TestResultValue(str(head.value)))
+
+
+# tr = TestRule()
