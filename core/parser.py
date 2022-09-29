@@ -93,17 +93,5 @@ class Ref(Rule):
         return state.processor.apply_rule_name_to_state(self.rule_name, state).as_child_result()
 
 
-@dataclass(frozen=True)
-class Any(Rule):  # pylint: disable=duplicate-code
-    '''rule for matching any token'''
-
-    def __str__(self) -> str:
-        return '.'
-
-    def apply(self, state: State) -> ResultAndState:
-        if state.value.empty:
-            raise RuleError(rule=self, state=state, msg='empty stream')
-        return ResultAndState(Result(value=state.value.head), state.with_value(state.value.tail))
-
-
 UntilEmpty = stream.UntilEmpty[lexer.Token, lexer.TokenStream]
+Any = stream.Any[lexer.Token]

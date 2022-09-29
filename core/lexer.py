@@ -177,6 +177,10 @@ class Lexer(processor.Processor[Char, CharStream]):
                 self._convert_input(input_str)))
 
 
+Any = stream.Any[Char]
+UntilEmpty = stream.UntilEmpty[Char, CharStream]
+
+
 @dataclass(frozen=True)
 class Class(stream.HeadRule[Char, Char]):
     '''lex rule matching set of chars'''
@@ -190,7 +194,7 @@ class Class(stream.HeadRule[Char, Char]):
     def result(self, head: Char) -> Result:
         if not head.value in self.values:
             raise Error(
-                msg=f'value {head.value} not in class values {self.values}')
+                msg=f'{head.value} not in {self.values}')
         return Result(value=head)
 
     @staticmethod
@@ -199,11 +203,8 @@ class Class(stream.HeadRule[Char, Char]):
         return Class(string.whitespace)
 
 
-UntilEmpty = stream.UntilEmpty[Char, CharStream]
-
-
 @dataclass(frozen=True)
-class Literal(Rule):
+class Literal(stream.HeadRule[Char, Char]):
     '''lex rule matching a given char'''
 
     value: str
@@ -215,12 +216,36 @@ class Literal(Rule):
     def __str__(self) -> str:
         return self.value
 
-    def apply(self, state: State) -> ResultAndState:
-        if state.value.empty:
-            raise RuleError(rule=self, state=state, msg='empty stream')
-        if state.value.head.value != self.value:
-            raise RuleError(rule=self, state=state)
-        return ResultAndState(Result(value=state.value.head), state.with_value(state.value.tail))
+    def result(self, head: Char) -> Result:
+        if head.value != self.value:
+            raise Error(
+                msg=f'{head.value} != {self.value}')
+        return Result(value=head)
+
+
+@dataclass(frozen=True)
+class Range(stream.HeadRule[Char, Char]):
+    '''lex rule matching a range of chars'''
+
+    min: str
+    max: str
+
+    def __post_init__(self):
+        if len(self.min) != 1:
+            raise Error(msg=f'invalid min value {self.min}')
+        if len(self.max) != 1:
+            raise Error(msg=f'invalid max value {self.max}')
+        if self.min >= self.max:
+            raise Error(msg=f'invalid range {self}')
+
+    def __str__(self) -> str:
+        return f'[{self.min}-{self.max}]'
+
+    def result(self, head: Char) -> Result:
+        if head.value < self.min or head.value > self.max:
+            raise Error(
+                msg=f'{head.value} not in {self}')
+        return Result(value=head)
 
 
 @dataclass(frozen=True)
@@ -244,32 +269,3 @@ class Not(UnaryRule):
                 state=state,
                 msg=f'Not {self} successfully applied child {self.child}',
             )
-
-
-Any = stream.Any[Char]
-
-
-@dataclass(frozen=True)
-class Range(Rule):
-    '''lex rule matching a range of chars'''
-
-    min: str
-    max: str
-
-    def __post_init__(self):
-        if len(self.min) != 1:
-            raise Error(msg=f'invalid min value {self.min}')
-        if len(self.max) != 1:
-            raise Error(msg=f'invalid max value {self.max}')
-        if self.min >= self.max:
-            raise Error(msg=f'invalid range {self}')
-
-    def __str__(self) -> str:
-        return f'[{self.min}-{self.max}]'
-
-    def apply(self, state: State) -> ResultAndState:
-        if state.value.empty:
-            raise RuleError(rule=self, state=state, msg='empty stream')
-        if state.value.head.value < self.min or state.value.head.value > self.max:
-            raise RuleError(rule=self, state=state)
-        return ResultAndState(Result(value=state.value.head), state.with_value(state.value.tail))

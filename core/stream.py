@@ -132,24 +132,3 @@ class Any(HeadRule[_Item_contra, _Item_contra]):
 
     def result(self, head: _Item_contra) -> processor.Result[_Item_contra]:
         return processor.Result[_Item_contra](value=head)
-
-# @dataclass(frozen=True)
-# class TestItem:
-#     value: int
-
-
-# @dataclass(frozen=True)
-# class TestResultValue:
-#     value: str
-
-
-# class TestStream(Stream[TestItem]):
-#     ...
-
-
-# class TestRule(HeadRule[TestResultValue, TestItem]):
-#     def result(self, head: TestItem) -> processor.Result[TestResultValue]:
-#         return processor.Result(value=TestResultValue(str(head.value)))
-
-
-# tr = TestRule()
