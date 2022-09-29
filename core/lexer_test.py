@@ -5,7 +5,7 @@ import string
 from typing import Tuple
 import unittest
 
-from . import lexer, stream_processor_test
+from . import lexer, processor_test
 
 
 class CharTest(unittest.TestCase):
@@ -23,14 +23,10 @@ class CharTest(unittest.TestCase):
             lexer.Char('aa', lexer.Position(0, 0))
 
 
-_StreamProcessorTestCase = stream_processor_test.StreamProcessorTestCase[
-    lexer.Char, lexer.Char]
-
-
-class LexerTest(_StreamProcessorTestCase):
+class LexerTest(processor_test.ProcessorTestCase[lexer.Char, lexer.CharStream]):
     '''tests for lexer.Lexer'''
 
-    @property
+    @ property
     def processor(self) -> lexer.Lexer:
         return lexer.Lexer(OrderedDict({
             'a': lexer.Literal('a'),
@@ -148,7 +144,7 @@ class LexerTest(_StreamProcessorTestCase):
                 ])
             ),
             (
-                'hz',
+                'hh',
                 lexer.TokenStream([
                     lexer.Token(rule_name='h', value='hz',
                                 position=lexer.Position(0, 0)),

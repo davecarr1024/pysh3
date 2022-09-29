@@ -3,13 +3,10 @@
 import collections
 import string
 from typing import Tuple
-from . import lexer, parser, stream_processor_test
+from . import lexer, parser, processor_test
 
 
-class ParserTest(
-    stream_processor_test.StreamProcessorTestCase[parser.lexer.Token,
-                                                  parser.lexer.Token]
-):
+class ParserTest(processor_test.ProcessorTestCase[lexer.Token, lexer.TokenStream]):
     '''tests for parser.Parser'''
 
     @property

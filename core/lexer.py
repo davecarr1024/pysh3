@@ -2,11 +2,11 @@
 
 from dataclasses import dataclass
 import string
-from typing import Container, Mapping, MutableSequence, OrderedDict, Type
-from . import stream_processor, processor
+from typing import Mapping, MutableSequence, OrderedDict, Sequence, Type
+from . import stream, processor
 
 
-class Error(stream_processor.Error):
+class Error(processor.Error):
     '''lexer error'''
 
 
@@ -41,38 +41,29 @@ class Char:
             raise Error(msg=f'invalid ResultValue value {self.value}')
 
 
-class StateError(Error, stream_processor.StateError[Char, Char]):  # pylint: disable=too-many-ancestors
+class CharStream(stream.Stream[Char]):
+    '''char stream'''
+
+    def __str__(self) -> str:
+        if self.empty:
+            return 'CharStream()'
+        else:
+            tail_str = ''.join([char.value for char in self.items[:10]])
+            return f'CharStream({repr(tail_str)}@{self.head.position})'
+
+    @property
+    def tail(self) -> 'CharStream':
+        if self.empty:
+            raise Error(msg='taking tail of empty stream')
+        return CharStream(self._items[1:])
+
+
+class StateError(Error, processor.StateError[Char, CharStream]):  # pylint: disable=too-many-ancestors
     '''lexer error with state'''
 
-    def str_line(self, indent: int) -> str:
-        output = f'\n{"  "*indent}'
-        if self.rule_name:
-            output += f'{self.rule_name} '
-        if self.msg:
-            output += f'({self.msg}) '
-        if not self.state.value.empty:
-            output += repr(''.join([char.value for char in self.state.value.items[:10]]))
-            output += f'@{self.state.value.head.position}'
-        return output
 
-
-class RuleError(StateError, stream_processor.RuleError[Char, Char]):  # pylint: disable=too-many-ancestors
+class RuleError(StateError, processor.RuleError[Char, CharStream]):  # pylint: disable=too-many-ancestors
     '''lexer error for rule'''
-
-    def str_line(self, indent: int) -> str:
-        output = f'\n{"  "*indent}'
-        if self.rule_name:
-            output += f'{self.rule_name} '
-        output += f'for {self.rule} '
-        if self.msg:
-            output += f'({self.msg}) '
-        if not self.state.value.empty:
-            output += repr(''.join([char.value for char in self.state.value.items[:10]]))
-            output += f'@{self.state.value.head.position}'
-        return output
-
-
-CharStream = stream_processor.Stream[Char]
 
 
 @dataclass(frozen=True)
@@ -87,22 +78,35 @@ class Token:
         return repr(self.value)
 
 
-TokenStream = stream_processor.Stream[Token]
+class TokenStream(stream.Stream[Token]):
+    '''token stream'''
+
+    def __str__(self) -> str:
+        if self.empty:
+            return 'TokenStream()'
+        else:
+            tail_str = ' '.join([token.value for token in self.items[:10]])
+            return f'TokenStream({repr(tail_str)}@{self.head.position})'
+
+    @property
+    def tail(self) -> 'TokenStream':
+        if self.empty:
+            raise Error(msg='taking tail of empty stream')
+        return TokenStream(self._items[1:])
 
 
-State = stream_processor.State[Char, Char]
-Result = stream_processor.Result[Char]
-ResultAndState = stream_processor.ResultAndState[Char, Char]
-Rule = stream_processor.Rule[Char, Char]
-Ref = stream_processor.Ref[Char, Char]
-And = stream_processor.And[Char, Char]
-Or = stream_processor.Or[Char, Char]
-ZeroOrMore = stream_processor.ZeroOrMore[Char, Char]
-OneOrMore = stream_processor.OneOrMore[Char, Char]
-ZeroOrOne = stream_processor.ZeroOrOne[Char, Char]
-UntilEmpty = stream_processor.UntilEmpty[Char, Char]
-NaryRule = stream_processor.NaryRule[Char, Char]
-UnaryRule = stream_processor.UnaryRule[Char, Char]
+State = processor.State[Char, CharStream]
+Result = processor.Result[Char]
+ResultAndState = processor.ResultAndState[Char, CharStream]
+Rule = processor.Rule[Char, CharStream]
+Ref = processor.Ref[Char, CharStream]
+And = processor.And[Char, CharStream]
+Or = processor.Or[Char, CharStream]
+ZeroOrMore = processor.ZeroOrMore[Char, CharStream]
+OneOrMore = processor.OneOrMore[Char, CharStream]
+ZeroOrOne = processor.ZeroOrOne[Char, CharStream]
+NaryRule = processor.NaryRule[Char, CharStream]
+UnaryRule = processor.UnaryRule[Char, CharStream]
 
 _INTERNAL_PREFIX = '_lexer_'
 _ROOT_RULE_NAME = f'{_INTERNAL_PREFIX}root'
@@ -111,7 +115,7 @@ EXCLUDE_NAME_PREFIX = '_'
 
 
 @dataclass(frozen=True, init=False)
-class Lexer(stream_processor.Processor[Char, Char]):
+class Lexer(processor.Processor[Char, CharStream]):
     '''Lexer splits an incoming string into tokens'''
 
     def __init__(self, rules: OrderedDict[str, Rule]):
@@ -175,19 +179,22 @@ class Lexer(stream_processor.Processor[Char, Char]):
                 self._convert_input(input_str)))
 
 
-class _HeadRule(stream_processor.HeadRule[Char, Char]):
-    def result(self, head: Char) -> Result:
-        return Result(value=head)
-
-
 @dataclass(frozen=True)
-class Class(_HeadRule):
+class Class(Rule):
     '''lex rule matching range of chars'''
 
-    values: Container[str]
+    values: Sequence[str]
 
-    def pred(self, head: Char) -> bool:
-        return head.value in self.values
+    def __post_init__(self):
+        if not all(len(c) == 1 for c in self.values):
+            raise Error(msg=f'invalid class values {repr(self.values)}')
+
+    def apply(self, state: State) -> ResultAndState:
+        if state.value.empty:
+            raise RuleError(rule=self, state=state, msg='empty state')
+        if state.value.head.value not in self.values:
+            raise RuleError(rule=self, state=state, msg='class not found')
+        return ResultAndState(Result(value=state.value.head), state.with_value(state.value.tail))
 
     @staticmethod
     def whitespace() -> 'Class':
@@ -195,8 +202,11 @@ class Class(_HeadRule):
         return Class(string.whitespace)
 
 
+UntilEmpty = stream.UntilEmpty[Char, CharStream]
+
+
 @dataclass(frozen=True)
-class Literal(_HeadRule):
+class Literal(Rule):
     '''lex rule matching a given char'''
 
     value: str
@@ -208,8 +218,12 @@ class Literal(_HeadRule):
     def __str__(self) -> str:
         return self.value
 
-    def pred(self, head: Char) -> bool:
-        return head.value == self.value
+    def apply(self, state: State) -> ResultAndState:
+        if state.value.empty:
+            raise RuleError(rule=self, state=state, msg='empty stream')
+        if state.value.head.value != self.value:
+            raise RuleError(rule=self, state=state)
+        return ResultAndState(Result(value=state.value.head), state.with_value(state.value.tail))
 
 
 @dataclass(frozen=True)
@@ -236,18 +250,20 @@ class Not(UnaryRule):
 
 
 @dataclass(frozen=True)
-class Any(_HeadRule):
+class Any(Rule):
     '''lex rule matching anything'''
 
     def __str__(self) -> str:
         return '.'
 
-    def pred(self, head: Char) -> bool:
-        return True
+    def apply(self, state: State) -> ResultAndState:
+        if state.value.empty:
+            raise RuleError(rule=self, state=state, msg='empty stream')
+        return ResultAndState(Result(value=state.value.head), state.with_value(state.value.tail))
 
 
 @dataclass(frozen=True)
-class Range(_HeadRule):
+class Range(Rule):
     '''lex rule mathcing a range of chars'''
 
     min: str
@@ -264,5 +280,9 @@ class Range(_HeadRule):
     def __str__(self) -> str:
         return f'[{self.min}-{self.max}]'
 
-    def pred(self, head: Char) -> bool:
-        return self.min <= head.value <= self.max
+    def apply(self, state: State) -> ResultAndState:
+        if state.value.empty:
+            raise RuleError(rule=self, state=state, msg='empty stream')
+        if state.value.head.value < self.min or state.value.head.value > self.max:
+            raise RuleError(rule=self, state=state)
+        return ResultAndState(Result(value=state.value.head), state.with_value(state.value.tail))
