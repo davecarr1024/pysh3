@@ -117,7 +117,7 @@ class Namespace(Expr):
         namespace_scope = scope.as_child()
         for expr in self.body:
             expr.eval(namespace_scope)
-        return vals.Namespace(namespace_scope)
+        return Result(value=vals.Namespace(namespace_scope))
 
     @ classmethod
     def load_result(cls, result: parser.Result) -> Expr:

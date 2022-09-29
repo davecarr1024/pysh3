@@ -49,10 +49,10 @@ class TestAssignment(unittest.TestCase):
 class TestNamespace(unittest.TestCase):
     def test_eval(self):
         scope = vals.Scope()
-        namespace = exprs.Namespace([
+        namespace: vals.Val = exprs.Namespace([
             exprs.Literal(builtins_.Int(value=1)),
             exprs.Assignment('a', exprs.Literal(builtins_.Int(value=2))),
-        ]).eval(scope)
+        ]).eval(scope).value
         self.assertNotIn('a', scope)
-        self.assertIn('a', namespace)
+        self.assertIn('a', namespace.members)
         self.assertEqual(namespace['a'], builtins_.Int(value=2))
