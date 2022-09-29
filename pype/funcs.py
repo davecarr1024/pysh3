@@ -3,11 +3,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 import inspect
-from typing import (
-    Callable,
-    MutableSequence,
-    Sequence,
-)
+from typing import Callable, MutableSequence, Sequence
 from . import vals, exprs
 
 
@@ -45,7 +41,7 @@ class Func(AbstractFunc):
             result = expr.eval(func_scope)
             if result.is_return:
                 return result.value
-        return vals.none
+        raise Error(f'no return in {self}')
 
 
 @dataclass(frozen=True)

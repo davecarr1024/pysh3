@@ -151,31 +151,6 @@ class Class(AbstractClass):
 
 
 @dataclass(frozen=True)
-class BuiltinClass(AbstractClass):
-    '''builtin class'''
-
-    __object_type: Type['Object']
-    _members: Scope = field(init=False, default_factory=Scope)
-    _name: Optional[str] = None
-
-    def __post_init__(self):
-        # build members
-        pass
-
-    @property
-    def name(self) -> str:
-        return self._name or self.__object_type.__name__
-
-    @property
-    def _object_type(self) -> Type['Object']:
-        return self.__object_type
-
-    @property
-    def members(self) -> Scope:
-        return self._members
-
-
-@dataclass(frozen=True)
 class Object(Val):
     '''object'''
 
@@ -193,30 +168,3 @@ class Object(Val):
         if '__call__' not in self:
             raise Error(f'object {self} not callable')
         return self['__call__'].apply(scope, args)
-
-
-@dataclass(frozen=True)
-class Int(Object):
-    '''int builtin'''
-
-    class_: AbstractClass = field(default_factory=lambda: IntClass, repr=False)
-    _members: Scope = field(
-        default_factory=lambda: IntClass.members.as_child(), repr=False)  # pylint: disable=unnecessary-lambda
-    value: int = field(kw_only=True, default=0)
-
-
-IntClass = BuiltinClass(Int)
-
-
-@dataclass(frozen=True)
-class NoneObject(Object):
-    '''None builtin'''
-
-    class_: AbstractClass = field(
-        default_factory=lambda: NoneClass, repr=False)
-    _members: Scope = field(
-        default_factory=lambda: NoneClass.members.as_child(), repr=False)  # pylint: disable=unnecessary-lambda
-
-
-NoneClass = BuiltinClass(NoneObject, _name='NoneClass')
-none = NoneObject()

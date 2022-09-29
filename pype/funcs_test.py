@@ -2,7 +2,7 @@
 
 from typing import Sequence, Tuple
 import unittest
-from . import funcs, vals, exprs
+from . import funcs, vals, exprs, builtins_
 
 
 class FuncTest(unittest.TestCase):
@@ -11,13 +11,15 @@ class FuncTest(unittest.TestCase):
         self.assertEqual(
             funcs.Func(
                 [
-                    exprs.Assignment('a', exprs.Literal(vals.Int(value=1))),
+                    exprs.Assignment('a', exprs.Literal(
+                        builtins_.Int(value=1))),
                     exprs.Return(exprs.Ref('a')),
-                    exprs.Assignment('a', exprs.Literal(vals.Int(value=2))),
+                    exprs.Assignment('a', exprs.Literal(
+                        builtins_.Int(value=2))),
                 ],
                 []
             ).apply(scope, []),
-            vals.Int(value=1))
+            builtins_.Int(value=1))
         self.assertNotIn('a', scope)
 
     def test_apply_param(self):
@@ -28,8 +30,8 @@ class FuncTest(unittest.TestCase):
                     exprs.Return(exprs.Ref('a')),
                 ],
                 ['a']
-            ).apply(scope, [vals.Int(value=1)]),
-            vals.Int(value=1))
+            ).apply(scope, [builtins_.Int(value=1)]),
+            builtins_.Int(value=1))
         self.assertNotIn('a', scope)
 
     def test_apply_fail(self):
@@ -40,7 +42,7 @@ class FuncTest(unittest.TestCase):
             ),
             (
                 funcs.Func([], ['a']),
-                [vals.Int(value=1), vals.Int(value=2)],
+                [builtins_.Int(value=1), builtins_.Int(value=2)],
             ),
         ]):
             with self.subTest(func=func, args=args):
@@ -51,7 +53,7 @@ class FuncTest(unittest.TestCase):
 class BuiltinFuncTest(unittest.TestCase):
     def test_apply(self):
         self.assertEqual(
-            funcs.BuiltinFunc(lambda scope, args: vals.Int(
+            funcs.BuiltinFunc(lambda scope, args: builtins_.Int(
                 value=1)).apply(vals.Scope.default(), []),
-            vals.Int(value=1)
+            builtins_.Int(value=1)
         )

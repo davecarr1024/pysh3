@@ -1,24 +1,7 @@
 # pylint: disable=missing-module-docstring,missing-class-docstring,missing-function-docstring
 
 import unittest
-from . import vals
-
-
-class NoneTest(unittest.TestCase):
-    def test_class(self):
-        self.assertEqual('NoneClass', vals.NoneClass.name)
-
-    def test_eq(self):
-        self.assertEqual(vals.none, vals.none)
-
-
-class IntTest(unittest.TestCase):
-    def test_int_class(self):
-        self.assertEqual('Int', vals.IntClass.name)
-
-    def test_eq(self):
-        self.assertEqual(vals.Int(value=1), vals.Int(value=1))
-        self.assertNotEqual(vals.Int(value=1), vals.Int(value=2))
+from . import builtins_, vals
 
 
 class ScopeTest(unittest.TestCase):
@@ -28,16 +11,16 @@ class ScopeTest(unittest.TestCase):
 
     def test_get_item(self):
         self.assertEqual(
-            vals.Scope(None, {'a': vals.Int(value=1)})['a'],
-            vals.Int(value=1)
+            vals.Scope(None, {'a': builtins_.Int(value=1)})['a'],
+            builtins_.Int(value=1)
         )
 
     def test_set_item(self):
         scope = vals.Scope(None, {})
         self.assertNotIn('a', scope)
-        scope['a'] = vals.Int(value=1)
+        scope['a'] = builtins_.Int(value=1)
         self.assertIn('a', scope)
-        self.assertEqual(scope['a'], vals.Int(value=1))
+        self.assertEqual(scope['a'], builtins_.Int(value=1))
 
     def test_vals(self):
         self.assertDictEqual(
@@ -45,15 +28,15 @@ class ScopeTest(unittest.TestCase):
                 vals.Scope(
                     None,
                     {
-                        'a': vals.Int(value=1),
+                        'a': builtins_.Int(value=1),
                     }
                 ),
                 {
-                    'b': vals.Int(value=2),
+                    'b': builtins_.Int(value=2),
                 }
             ).vals,
             {
-                'b': vals.Int(value=2),
+                'b': builtins_.Int(value=2),
             }
         )
 
@@ -63,22 +46,22 @@ class ScopeTest(unittest.TestCase):
                 vals.Scope(
                     None,
                     {
-                        'a': vals.Int(value=1),
+                        'a': builtins_.Int(value=1),
                     }
                 ),
                 {
-                    'b': vals.Int(value=2),
+                    'b': builtins_.Int(value=2),
                 }
             ).all_vals,
             {
-                'a': vals.Int(value=1),
-                'b': vals.Int(value=2),
+                'a': builtins_.Int(value=1),
+                'b': builtins_.Int(value=2),
             }
         )
 
     def test_as_child(self):
         self.assertEqual(
-            vals.Scope(None, {'a': vals.Int(value=1)}).as_child(),
+            vals.Scope(None, {'a': builtins_.Int(value=1)}).as_child(),
             vals.Scope(vals.Scope(
-                None, {'a': vals.Int(value=1)}))
+                None, {'a': builtins_.Int(value=1)}))
         )
