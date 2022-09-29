@@ -13,7 +13,7 @@ class Error(processor.Error):
 _Item_co = TypeVar('_Item_co', covariant=True)
 
 
-class AbstractStream(ABC):
+class AbstractStream(ABC):  # pylint: disable=too-few-public-methods
     '''abstract stream'''
 
     @property

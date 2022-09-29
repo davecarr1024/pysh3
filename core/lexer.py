@@ -47,9 +47,8 @@ class CharStream(stream.Stream[Char]):
     def __str__(self) -> str:
         if self.empty:
             return 'CharStream()'
-        else:
-            tail_str = ''.join([char.value for char in self.items[:10]])
-            return f'CharStream({repr(tail_str)}@{self.head.position})'
+        tail_str = ''.join([char.value for char in self.items[:10]])
+        return f'CharStream({repr(tail_str)}@{self.head.position})'
 
     @property
     def tail(self) -> 'CharStream':
@@ -84,9 +83,8 @@ class TokenStream(stream.Stream[Token]):
     def __str__(self) -> str:
         if self.empty:
             return 'TokenStream()'
-        else:
-            tail_str = ' '.join([token.value for token in self.items[:10]])
-            return f'TokenStream({repr(tail_str)}@{self.head.position})'
+        tail_str = ' '.join([token.value for token in self.items[:10]])
+        return f'TokenStream({repr(tail_str)}@{self.head.position})'
 
     @property
     def tail(self) -> 'TokenStream':
@@ -181,7 +179,7 @@ class Lexer(processor.Processor[Char, CharStream]):
 
 @dataclass(frozen=True)
 class Class(Rule):
-    '''lex rule matching range of chars'''
+    '''lex rule matching set of chars'''
 
     values: Sequence[str]
 
@@ -228,7 +226,7 @@ class Literal(Rule):
 
 @dataclass(frozen=True)
 class Not(UnaryRule):
-    '''negation of a given lex'''
+    '''negation of a lex rule'''
 
     def __str__(self) -> str:
         return f'^{self.child}'
@@ -264,7 +262,7 @@ class Any(Rule):
 
 @dataclass(frozen=True)
 class Range(Rule):
-    '''lex rule mathcing a range of chars'''
+    '''lex rule matching a range of chars'''
 
     min: str
     max: str
