@@ -26,16 +26,6 @@ class Expr(ABC):  # pylint: disable=too-few-public-methods
 
 
 @dataclass(frozen=True)
-class ReturnStatement(Expr):
-    '''return statement'''
-
-    value: Expr
-
-    def eval(self, scope: vals.Scope) -> Result:
-        return self.value.eval(scope)
-
-
-@dataclass(frozen=True)
 class Ref(Expr):
     '''ref'''
 
