@@ -2,6 +2,8 @@
 
 from dataclasses import dataclass
 from typing import Optional, Sequence
+
+from ..core import parser
 from . import vals, exprs, builtins_, funcs
 
 
@@ -18,6 +20,10 @@ class Return(exprs.Expr):
         if self.value is None:
             return exprs.Result(builtins_.none, is_return=True)
         return exprs.Result(self.value.eval(scope).value, is_return=True)
+
+    @classmethod
+    def load_result(cls, result: parser.Result) -> exprs.Expr:
+        raise NotImplementedError(result)
 
 
 @dataclass(frozen=True)

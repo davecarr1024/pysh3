@@ -1,7 +1,20 @@
 # pylint: disable=missing-module-docstring,missing-class-docstring,missing-function-docstring
 
+from typing import Tuple
 import unittest
 from . import exprs, vals, builtins_
+
+
+class TestExpr(unittest.TestCase):
+    def test_load(self):
+        for input_str, expected_expr in list[Tuple[str, exprs.Expr]]([
+            (
+                'a;',
+                exprs.Namespace([exprs.Ref('a')]),
+            ),
+        ]):
+            with self.subTest(input_str=input_str, expected_expr=expected_expr):
+                self.assertEqual(expected_expr, exprs.Expr.load(input_str))
 
 
 class TestRef(unittest.TestCase):
@@ -31,3 +44,15 @@ class TestAssignment(unittest.TestCase):
         exprs.Assignment('a', exprs.Literal(
             builtins_.Int(value=1))).eval(scope)
         self.assertEqual(scope['a'], builtins_.Int(value=1))
+
+
+class TestNamespace(unittest.TestCase):
+    def test_eval(self):
+        scope = vals.Scope()
+        namespace = exprs.Namespace([
+            exprs.Literal(builtins_.Int(value=1)),
+            exprs.Assignment('a', exprs.Literal(builtins_.Int(value=2))),
+        ]).eval(scope)
+        self.assertNotIn('a', scope)
+        self.assertIn('a', namespace)
+        self.assertEqual(namespace['a'], builtins_.Int(value=2))

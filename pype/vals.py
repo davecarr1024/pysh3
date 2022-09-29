@@ -110,6 +110,17 @@ class Scope:
         return Scope()
 
 
+@dataclass(frozen=True)
+class Namespace(Val):
+    '''namespace'''
+
+    _members: Scope
+
+    @property
+    def members(self) -> Scope:
+        return self._members
+
+
 class AbstractClass(Val, ABC):
     '''abstract class'''
 
