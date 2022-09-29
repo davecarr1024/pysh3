@@ -144,7 +144,7 @@ class LexerTest(processor_test.ProcessorTestCase[lexer.Char, lexer.CharStream]):
                 ])
             ),
             (
-                'hh',
+                'hz',
                 lexer.TokenStream([
                     lexer.Token(rule_name='h', value='hz',
                                 position=lexer.Position(0, 0)),
