@@ -3,7 +3,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import MutableSequence, Sequence
-from . import vals, exprs
+from . import vals
 
 
 class Error(Exception):
@@ -18,36 +18,16 @@ class AbstractFunc(vals.Val, ABC):
     def params(self) -> Sequence[str]:
         '''params'''
 
-
-@dataclass(frozen=True)
-class Func(AbstractFunc):
-    '''func'''
-
-    body: Sequence[exprs.Expr]
-    _params: Sequence[str]
-
-    @property
-    def params(self) -> Sequence[str]:
-        return self._params
-
+    @abstractmethod
     def apply(self, scope: vals.Scope, args: Sequence[vals.Val]) -> vals.Val:
-        '''apply'''
-        if len(self.params) != len(args):
-            raise Error(
-                f'arg count mismatch for {self}: expected {len(self.params)} got {len(args)}')
-        func_scope = scope.as_child(**dict(zip(self.params, args)))
-        for expr in self.body:
-            result = expr.eval(func_scope)
-            if result.is_return:
-                return result.value
-        raise Error(f'no return in {self}')
+        ...
 
 
 @dataclass(frozen=True)
 class BindableFunc(AbstractFunc):
     '''bindable func'''
 
-    func: Func
+    func: AbstractFunc
 
     def __post_init__(self):
         if len(self.func.params) == 0:

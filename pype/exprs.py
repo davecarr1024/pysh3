@@ -1,7 +1,7 @@
 '''vals'''
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from . import vals
 
 
@@ -14,7 +14,7 @@ class Result:
     '''result of evaluating an expression'''
 
     value: vals.Val
-    is_return: bool = False
+    is_return: bool = field(kw_only=True, default=False)
 
 
 class Expr(ABC):  # pylint: disable=too-few-public-methods
@@ -67,16 +67,3 @@ class Assignment(Expr):
         value = self.value.eval(scope)
         scope[self.name] = value.value
         return value
-
-
-@dataclass(frozen=True)
-class Return(Expr):
-    '''return statement'''
-
-    value: Expr
-
-    def __str__(self) -> str:
-        return f'return {self.value}'
-
-    def eval(self, scope: vals.Scope) -> Result:
-        return Result(self.value.eval(scope).value, is_return=True)

@@ -31,12 +31,3 @@ class TestAssignment(unittest.TestCase):
         exprs.Assignment('a', exprs.Literal(
             builtins_.Int(value=1))).eval(scope)
         self.assertEqual(scope['a'], builtins_.Int(value=1))
-
-
-class TestReturn(unittest.TestCase):
-    def test_eval(self):
-        self.assertEqual(
-            exprs.Return(exprs.Literal(builtins_.Int(value=1))
-                         ).eval(vals.Scope()),
-            exprs.Result(builtins_.Int(value=1), is_return=True)
-        )
