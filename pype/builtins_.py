@@ -1,12 +1,27 @@
 '''builtins'''
 
 from dataclasses import dataclass, field
-from typing import Optional, Type
-from . import vals
+import inspect
+from typing import Callable, Optional, Sequence, Type
+from . import vals, funcs
 
 
 class Error(Exception):
     '''builtins error'''
+
+
+@dataclass(frozen=True)
+class BuiltinFunc(funcs.AbstractFunc):
+    '''builtin func'''
+
+    func: Callable[[vals.Scope, Sequence[vals.Val]], vals.Val]
+
+    @property
+    def params(self) -> Sequence[str]:
+        raise NotImplementedError(inspect.getfullargspec(self.func))
+
+    def apply(self, scope: vals.Scope, args: Sequence[vals.Val]) -> vals.Val:
+        return self.func(scope, args)
 
 
 @dataclass(frozen=True)

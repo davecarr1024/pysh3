@@ -1,7 +1,16 @@
 # pylint: disable=missing-module-docstring,missing-class-docstring,missing-function-docstring
 
 import unittest
-from . import builtins_
+from . import builtins_, vals
+
+
+class BuiltinFuncTest(unittest.TestCase):
+    def test_apply(self):
+        self.assertEqual(
+            builtins_.BuiltinFunc(lambda scope, args: builtins_.Int(
+                value=1)).apply(vals.Scope.default(), []),
+            builtins_.Int(value=1)
+        )
 
 
 class NoneTest(unittest.TestCase):

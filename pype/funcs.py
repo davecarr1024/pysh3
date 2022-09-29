@@ -2,8 +2,7 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-import inspect
-from typing import Callable, MutableSequence, Sequence
+from typing import MutableSequence, Sequence
 from . import vals, exprs
 
 
@@ -89,17 +88,3 @@ class BoundFunc(AbstractFunc):
         bound_args: MutableSequence[vals.Val] = [self.object_]
         bound_args.extend(args)
         return self.func.apply(scope, bound_args)
-
-
-@dataclass(frozen=True)
-class BuiltinFunc(AbstractFunc):
-    '''builtin func'''
-
-    func: Callable[[vals.Scope, Sequence[vals.Val]], vals.Val]
-
-    @property
-    def params(self) -> Sequence[str]:
-        raise NotImplementedError(inspect.getfullargspec(self.func))
-
-    def apply(self, scope: vals.Scope, args: Sequence[vals.Val]) -> vals.Val:
-        return self.func(scope, args)

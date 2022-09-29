@@ -48,12 +48,3 @@ class FuncTest(unittest.TestCase):
             with self.subTest(func=func, args=args):
                 with self.assertRaises(funcs.Error):
                     func.apply(vals.Scope.default(), args)
-
-
-class BuiltinFuncTest(unittest.TestCase):
-    def test_apply(self):
-        self.assertEqual(
-            funcs.BuiltinFunc(lambda scope, args: builtins_.Int(
-                value=1)).apply(vals.Scope.default(), []),
-            builtins_.Int(value=1)
-        )
