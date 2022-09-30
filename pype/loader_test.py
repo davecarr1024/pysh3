@@ -37,6 +37,14 @@ class TestLoader(unittest.TestCase):
                     ),
                 ]),
             ),
+            (
+                'return;',
+                exprs.Namespace([func.Return(None)]),
+            ),
+            (
+                'return a;',
+                exprs.Namespace([func.Return(exprs.Ref('a'))]),
+            ),
         ]):
             with self.subTest(input_str=input_str, expected_expr=expected_expr):
                 self.assertEqual(expected_expr, loader.load(input_str))

@@ -44,11 +44,17 @@ def load(input_str: str) -> exprs.Expr:
     def load_namespace(result: parser.Result) -> exprs.Expr:
         return exprs.Namespace([load_expr(statement) for statement in result['statement']])
 
+    def load_return_statement(result: parser.Result) -> exprs.Expr:
+        if 'return_value' in result:
+            return func.Return(load_expr(result.where_one(parser.Result.rule_name_is('return_value'))))
+        return func.Return(None)
+
     load_expr = loader.factory({
         'ref': load_ref,
         'assignment': load_assignment,
         'literal': load_literal,
         'func': load_func,
+        'return_statement': load_return_statement,
     })
 
     return load_namespace(loader.load_parser(r'''
@@ -57,7 +63,7 @@ def load(input_str: str) -> exprs.Expr:
         int = "[1-9][0-9]*";
 
         root => statement+;
-        statement => func | ((assignment | expr) ";");
+        statement => func | ((return_statement | assignment | expr) ";");
         expr => ref | literal;
         ref => id;
         assignment => assignment_name "=" assignment_value;
@@ -71,4 +77,6 @@ def load(input_str: str) -> exprs.Expr:
         func_body => statement*;
         params => "(" param ("," param)* ")";
         param => id;
+        return_statement => "return" return_value?;
+        return_value => expr;
     ''').apply(input_str))
