@@ -136,7 +136,7 @@ class RuleError(StateError[_ResultValue, _StateValue]):
 
 @final
 @dataclass(frozen=True, repr=False)
-class Result(Generic[_ResultValue], Iterable['Result[_ResultValue]'], Sized, Container[str]):
+class Result(Generic[_ResultValue], Iterable['Result[_ResultValue]'], Sized):
     '''a container for nested processor results'''
 
     value: Optional[_ResultValue] = field(default=None, kw_only=True)
