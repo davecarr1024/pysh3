@@ -49,12 +49,12 @@ class Val(ABC):
         '''apply'''
         raise Error(f'applying uncallable val {self}')
 
-    @ property
+    @property
     def members(self) -> 'Scope':
         '''members'''
         return Scope()
 
-    @ property
+    @property
     def can_bind(self) -> bool:
         '''can this val be bound to an instance'''
         return False
@@ -72,7 +72,7 @@ class Val(ABC):
         return self.members[name]
 
 
-@ dataclass(frozen=True)
+@dataclass(frozen=True)
 class Scope(MutableMapping[str, Val]):
     '''scope'''
 
@@ -104,12 +104,12 @@ class Scope(MutableMapping[str, Val]):
     def __len__(self) -> int:
         return len(self._vals)
 
-    @ property
+    @property
     def vals(self) -> Mapping[str, Val]:
         '''vals'''
         return self._vals
 
-    @ property
+    @property
     def all_vals(self) -> Mapping[str, Val]:
         '''all vals contained in this scope and its parents'''
         vals: MutableMapping[str, Val] = {}
@@ -138,19 +138,19 @@ class Scope(MutableMapping[str, Val]):
         '''bind this scope to the given object'''
         self._vals.update(self.bind_vals(object_))
 
-    @ staticmethod
+    @staticmethod
     def default() -> 'Scope':
         '''default scope'''
         return Scope()
 
 
-@ dataclass(frozen=True)
+@dataclass(frozen=True)
 class Namespace(Val):
     '''namespace'''
 
     _members: Scope
 
-    @ property
+    @property
     def members(self) -> Scope:
         return self._members
 
@@ -158,17 +158,17 @@ class Namespace(Val):
 class AbstractClass(Val, ABC):
     '''abstract class'''
 
-    @ property
-    @ abstractmethod
+    @property
+    @abstractmethod
     def name(self) -> str:
         '''name of this class'''
 
-    @ property
-    @ abstractmethod
+    @property
+    @abstractmethod
     def members(self) -> Scope:
         ...
 
-    @ property
+    @property
     def _object_type(self) -> Type['Object']:
         return Object
 
@@ -179,23 +179,23 @@ class AbstractClass(Val, ABC):
         return object_
 
 
-@ dataclass(frozen=True)
+@dataclass(frozen=True)
 class Class(AbstractClass):
     '''class'''
 
     _name: str
     _members: Scope
 
-    @ property
+    @property
     def name(self) -> str:
         return self._name
 
-    @ property
+    @property
     def members(self) -> Scope:
         return self._members
 
 
-@ dataclass(frozen=True)
+@dataclass(frozen=True)
 class Object(Val):
     '''object'''
 
@@ -205,7 +205,7 @@ class Object(Val):
     def __post_init__(self):
         self._members.bind_self(self)
 
-    @ property
+    @property
     def members(self) -> Scope:
         return self._members
 

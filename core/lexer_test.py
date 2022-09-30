@@ -26,7 +26,7 @@ class CharTest(unittest.TestCase):
 class LexerTest(processor_test.ProcessorTestCase[lexer.Char, lexer.CharStream]):
     '''tests for lexer.Lexer'''
 
-    @ property
+    @property
     def processor(self) -> lexer.Lexer:
         return lexer.Lexer(OrderedDict({
             'a': lexer.Literal('a'),
