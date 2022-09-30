@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Sequence
 from ..core import loader, parser
-from . import vals
+from . import vals, builtins_
 
 
 class Error(Exception):
@@ -19,7 +19,7 @@ class Result:
     is_return: bool = field(kw_only=True, default=False)
 
 
-class Expr(ABC):  # pylint: disable=too-few-public-methods
+class Expr(ABC):
     '''expr'''
 
     @abstractmethod
@@ -32,6 +32,8 @@ class Expr(ABC):  # pylint: disable=too-few-public-methods
         '''load this expr type from parser result'''
         return loader.factory({
             'ref': Ref.load_result,
+            'assignment': Assignment.load_result,
+            'literal': Literal.load_result,
         })(result)
 
     @staticmethod
@@ -43,15 +45,21 @@ class Expr(ABC):  # pylint: disable=too-few-public-methods
         int = "[1-9][0-9]*";
 
         root => line+;
-        line => expr ";";
-        expr => ref;
+        line => statement ";";
+        statement => assignment | expr;
+        expr => ref | literal;
         ref => id;
+        assignment => assignment_name "=" assignment_value;
+        assignment_name => id;
+        assignment_value => expr;
+        literal => int_literal;
+        int_literal => int;
         ''')
         result = parser_.apply(input_str)
         return Namespace.load_result(result)
 
 
-@ dataclass(frozen=True)
+@dataclass(frozen=True)
 class Ref(Expr):
     '''ref'''
 
@@ -65,12 +73,12 @@ class Ref(Expr):
             raise Error(f'unknown ref {self}')
         return Result(scope[self.name])
 
-    @ classmethod
+    @classmethod
     def load_result(cls, result: parser.Result) -> Expr:
         return Ref(loader.get_token_value(result))
 
 
-@ dataclass(frozen=True)
+@dataclass(frozen=True)
 class Literal(Expr):
     '''literal'''
 
@@ -82,9 +90,14 @@ class Literal(Expr):
     def eval(self, scope: vals.Scope) -> Result:
         return Result(self.value)
 
-    @ classmethod
+    @classmethod
     def load_result(cls, result: parser.Result) -> Expr:
-        raise NotImplementedError(result)
+        def load_int_literal(lit: parser.Result) -> Expr:
+            return Literal(builtins_.Int(value=int(loader.get_token_value(lit))))
+
+        return loader.factory({
+            'int_literal': load_int_literal,
+        })(result)
 
 
 @ dataclass(frozen=True)
@@ -104,7 +117,12 @@ class Assignment(Expr):
 
     @ classmethod
     def load_result(cls, result: parser.Result) -> Expr:
-        raise NotImplementedError(result)
+        return Assignment(
+            loader.get_token_value(result.where_one(
+                parser.Result.rule_name_is('assignment_name'))),
+            Expr.load_result(result.where_one(
+                parser.Result.rule_name_is('assignment_value')))
+        )
 
 
 @ dataclass(frozen=True)
@@ -121,4 +139,4 @@ class Namespace(Expr):
 
     @ classmethod
     def load_result(cls, result: parser.Result) -> Expr:
-        return Namespace([Expr.load_result(expr) for expr in result['expr']])
+        return Namespace([Expr.load_result(statement) for statement in result['statement']])

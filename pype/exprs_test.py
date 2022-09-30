@@ -12,6 +12,15 @@ class TestExpr(unittest.TestCase):
                 'a;',
                 exprs.Namespace([exprs.Ref('a')]),
             ),
+            (
+                'a = b;',
+                exprs.Namespace([exprs.Assignment('a', exprs.Ref('b'))]),
+            ),
+            (
+                'a = 1;',
+                exprs.Namespace(
+                    [exprs.Assignment('a', exprs.Literal(builtins_.Int(value=1)))]),
+            ),
         ]):
             with self.subTest(input_str=input_str, expected_expr=expected_expr):
                 self.assertEqual(expected_expr, exprs.Expr.load(input_str))

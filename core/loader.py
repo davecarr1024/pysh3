@@ -228,6 +228,8 @@ def load_parser(grammar: str) -> parser.Parser:
         for lex_rule in result['lexer_decl']:
             name = get_token_value(
                 lex_rule.where_one(token_rule_name_is('id')))
+            if name in lexer_rules:
+                raise Error(msg=f'duplicate lexer rule {name}')
             regex = get_token_value(lex_rule.where_one(
                 token_rule_name_is('lexer_val')))[1:-1]
             lexer_rules[name] = load_lex_rule(regex)
@@ -262,7 +264,11 @@ def load_parser(grammar: str) -> parser.Parser:
 
         def load_lexer_literal(result: parser.Result) -> parser.Rule:
             lexer_val = get_token_value(result)[1:-1]
-            lexer_rules[lexer_val] = lexer_literal_rule(lexer_val)
+            lexer_rule = lexer_literal_rule(lexer_val)
+            if lexer_val in lexer_rules and lexer_rules[lexer_val] != lexer_rule:
+                raise Error(
+                    msg=f'mismatched lexer literal rule {lexer_val}={lexer_rule}')
+            lexer_rules[lexer_val] = lexer_rule
             return parser.Ref(lexer_val)
 
         load_rule = factory({
@@ -283,6 +289,8 @@ def load_parser(grammar: str) -> parser.Parser:
             except Error as error:
                 raise Error(
                     msg=f'failed to get rule_name in {decl}', children=[error]) from error
+            if name in rules:
+                raise Error(msg=f'duplicate parser rule {name}')
             if root_rule_name is None:
                 root_rule_name = name
             try:

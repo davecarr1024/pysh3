@@ -1,4 +1,4 @@
-'''tests for loader'''
+# pylint: disable=missing-module-docstring,missing-class-docstring,missing-function-docstring
 
 from collections import OrderedDict
 from typing import Tuple
@@ -14,10 +14,8 @@ if 'unittest.util' in __import__('sys').modules:
 
 
 class LoadLexRuleTest(unittest.TestCase):
-    '''tests for loader.load_lex_rule'''
 
     def test_load(self):
-        '''tests for loader.load_lex_rule'''
         for regex, expected_lex_rule in list[Tuple[str, lexer.Rule]]([
             ('a', lexer.Literal('a')),
             ('.', lexer.Any()),
@@ -40,7 +38,6 @@ class LoadLexRuleTest(unittest.TestCase):
                                  f'expected {expected_lex_rule} != actual {actual_lex_rule}')
 
     def test_load_fail(self):
-        '''tests for loader.load_lex_rule failures'''
         for regex in list[str]([
             '\\a',
         ]):
@@ -50,11 +47,8 @@ class LoadLexRuleTest(unittest.TestCase):
 
 
 class LoadParserTest(unittest.TestCase):
-    '''tests for loader.load_parser'''
 
     def test_load(self):
-        '''tests for loader.load_parser'''
-
         for grammar, expected_parser in list[Tuple[str, parser.Parser]]([
             (
                 r'''
@@ -216,3 +210,22 @@ class LoadParserTest(unittest.TestCase):
                 actual_parser = loader.load_parser(grammar)
                 self.assertEqual(expected_parser, actual_parser,
                                  f'expected {expected_parser} != actual {actual_parser}')
+
+    def test_load_fail(self):
+        for grammar in list[str]([
+            r'''
+                a = "b";
+                a = "b";
+            ''',
+            r'''
+                a = "b";
+                r => "a";
+            ''',
+            r'''
+                a => b;
+                a => c;
+            ''',
+        ]):
+            with self.subTest(grammar=grammar):
+                with self.assertRaises(loader.Error):
+                    loader.load_parser(grammar)
