@@ -97,6 +97,7 @@ class _ValueObject(_Object, Generic[_Value]):
 
     @classmethod
     def for_value(cls, value: _Value) -> '_ValueObject[_Value]':
+        '''build an object for the given value'''
         object_: '_ValueObject[_Value]' = cls(
             cls.builtin_class(), cls.builtin_class().members.as_child(), value)
         object_.bind_self()
@@ -105,6 +106,7 @@ class _ValueObject(_Object, Generic[_Value]):
 
 @dataclass(frozen=True)
 class Int(_ValueObject[int]):
+    '''int builtin'''
 
     @classmethod
     def builtin_class(cls) -> Class:
@@ -137,6 +139,7 @@ class Int(_ValueObject[int]):
 
 @dataclass(frozen=True)
 class Float(_ValueObject[float]):
+    '''float builtin'''
 
     @classmethod
     def builtin_class(cls) -> Class:

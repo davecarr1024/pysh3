@@ -66,7 +66,7 @@ def load(input_str: str) -> exprs.Namespace:
         return exprs.Call(object_, args)
 
     def load_binary_operation(result: parser.Result) -> exprs.Expr:
-        METHODS: Mapping[str, str] = {
+        methods: Mapping[str, str] = {
             '+': '__add__',
             '-': '__sub__',
             '*': '__mul__',
@@ -74,7 +74,7 @@ def load(input_str: str) -> exprs.Namespace:
         }
         lhs, rhs = (load_expr(operand) for operand in result['operand', 2])
         operator = loader.get_token_value(result['binary_operator', 1])
-        method = METHODS[operator]
+        method = methods[operator]
         return exprs.Call(exprs.Member(lhs, method), exprs.Args([exprs.Arg(rhs)]))
 
     load_expr = loader.factory({
