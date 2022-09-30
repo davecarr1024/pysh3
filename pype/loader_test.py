@@ -146,6 +146,10 @@ class TestLoader(unittest.TestCase):
             ('1 - 2;', builtins_.Int.for_value(-1)),
             ('1 * 2;', builtins_.Int.for_value(2)),
             ('1 / 2;', builtins_.Float.for_value(0.5)),
+            (
+                'def f(a,b) { return a + b; } f(1,2);',
+                builtins_.Int.for_value(3)
+            ),
         ]):
             with self.subTest(input_str=input_str, expected_result=expected_result):
                 self.assertEqual(loader.eval_(input_str), expected_result)
