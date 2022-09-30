@@ -7,11 +7,14 @@ from typing import (
     Callable,
     Container,
     Generic,
+    Iterable,
     Iterator,
     Mapping,
     MutableSequence,
     Optional,
     Sequence,
+    Sized,
+    Tuple,
     Type,
     TypeVar,
     final,
@@ -133,7 +136,7 @@ class RuleError(StateError[_ResultValue, _StateValue]):
 
 @final
 @dataclass(frozen=True, repr=False)
-class Result(Generic[_ResultValue]):
+class Result(Generic[_ResultValue], Iterable['Result[_ResultValue]'], Sized, Container[str]):
     '''a container for nested processor results'''
 
     value: Optional[_ResultValue] = field(default=None, kw_only=True)
@@ -262,8 +265,13 @@ class Result(Generic[_ResultValue]):
     def __iter__(self) -> Iterator['Result[_ResultValue]']:
         return iter(self.children)
 
-    def __getitem__(self, rule_name: str) -> 'Result[_ResultValue]':
-        return self.where(self.rule_name_is(rule_name))
+    def __getitem__(self, key: str | Tuple[str, int]) -> 'Result[_ResultValue]':
+        if isinstance(key, str):
+            return self.where(self.rule_name_is(key))
+        name, count = key
+        if count == 1:
+            return self.where_one(self.rule_name_is(name))
+        return self.where_n(self.rule_name_is(name), count)
 
     def __len__(self) -> int:
         return len(self.children)

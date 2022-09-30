@@ -1,4 +1,4 @@
-'''tests for processor'''
+# pylint: disable=missing-module-docstring, missing-class-docstring, missing-function-docstring,too-many-public-methods
 
 import unittest
 
@@ -28,10 +28,8 @@ if 'unittest.util' in __import__('sys').modules:
 
 
 class ErrorTest(unittest.TestCase):
-    '''tests for processor.Error'''
 
     def test_with_rule_name(self):
-        '''test for processor.Error.with_rule_name'''
         self.assertEqual(
             processor.Error(rule_name='a'),
             processor.Error().with_rule_name('a')
@@ -39,24 +37,20 @@ class ErrorTest(unittest.TestCase):
 
 
 class ResultTest(unittest.TestCase):
-    '''tests for processor.Result'''
 
     def test_with_rule_name(self):
-        '''tests for processor.Result.with_rule_name'''
         self.assertEqual(
             _Result(rule_name='a'),
             _Result().with_rule_name('a'),
         )
 
     def test_as_child_result(self):
-        '''tests for processor.Result.as_child_result'''
         self.assertEqual(
             _Result(value=1).as_child_result(),
             _Result(children=[_Result(value=1)])
         )
 
     def test_empty(self):
-        '''tests for processor.Result.empty'''
         for result, expected in list[Tuple[_Result, bool]]([
             (_Result(), True),
             (_Result(children=[_Result()]), True),
@@ -66,7 +60,6 @@ class ResultTest(unittest.TestCase):
                 self.assertEqual(expected, result.empty())
 
     def test_simplify(self):
-        '''tests for processor.Result.simplify'''
         for result, expected in list[Tuple[_Result, _Result]]([
             (_Result(value=1), _Result(value=1)),
             (_Result(rule_name='a'), _Result(rule_name='a')),
@@ -81,7 +74,6 @@ class ResultTest(unittest.TestCase):
                 self.assertEqual(expected, actual)
 
     def test_merge_children(self):
-        '''tests for processor.Result.merge_children'''
         self.assertEqual(
             _Result.merge_children([
                 _Result(children=[_Result(value=1)]),
@@ -91,14 +83,12 @@ class ResultTest(unittest.TestCase):
         )
 
     def test_where_value_is(self):
-        '''tests for processor.Result.where with value_is'''
         self.assertEqual(
             _Result(value=1).where(_Result.value_is(1)),
             _Result(children=[_Result(value=1)])
         )
 
     def test_where_has_value(self):
-        '''tests for processor.Result.where with has_value'''
         self.assertEqual(
             _Result(children=[_Result(value=1), _Result(
                 value=2), _Result()]).where(_Result.has_value),
@@ -106,14 +96,12 @@ class ResultTest(unittest.TestCase):
         )
 
     def test_where_rule_name_is(self):
-        '''tests for processor.Result.where with rule_name_is'''
         self.assertEqual(
             _Result(rule_name='a').where(_Result.rule_name_is('a')),
             _Result(children=[_Result(rule_name='a')])
         )
 
     def test_where_rule_name_in(self):
-        '''tests for processor.Result.where with rule_name_in'''
         self.assertEqual(
             _Result(rule_name='a').where(_Result.rule_name_in(('a', 'b'))),
             _Result(children=[_Result(rule_name='a')])
@@ -189,12 +177,47 @@ class ResultTest(unittest.TestCase):
         )
 
     def test_getitem(self):
-        '''result[foo] returns all children of rule_name=foo'''
         self.assertEqual(
             _Result(children=[_Result(rule_name='a', value=1),
                     _Result(rule_name='b', value=2)])['b'],
             _Result(children=[_Result(rule_name='b', value=2)])
         )
+
+    def test_getitem_one(self):
+        self.assertEqual(
+            _Result(children=[_Result(rule_name='a', value=1),
+                    _Result(rule_name='b', value=2)])['b', 1],
+            _Result(rule_name='b', value=2)
+        )
+
+    def test_getitem_one_fail(self):
+        with self.assertRaises(processor.Error):
+            _ = _Result(children=[_Result(rule_name='b', value=1),
+                                  _Result(rule_name='b', value=2)])['b', 1]
+
+    def test_getitem_n(self):
+        self.assertEqual(
+            _Result(
+                children=[
+                    _Result(rule_name='a', value=1),
+                    _Result(rule_name='b', value=2),
+                    _Result(rule_name='b', value=3),
+                ])['b', 2],
+            _Result(children=[
+                _Result(rule_name='b', value=2),
+                _Result(rule_name='b', value=3),
+            ])
+        )
+
+    def test_getitem_n_fail(self):
+        with self.assertRaises(processor.Error):
+            _ = _Result(
+                children=[
+                    _Result(rule_name='a', value=1),
+                    _Result(rule_name='b', value=2),
+                    _Result(rule_name='b', value=3),
+                    _Result(rule_name='b', value=4),
+                ])['b', 2]
 
     def test_len(self):
         '''len return length of result children'''
