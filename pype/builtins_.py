@@ -1,8 +1,9 @@
 '''builtins'''
 
+from abc import abstractmethod
 from dataclasses import dataclass, field
 import inspect
-from typing import Callable, Optional, Type
+from typing import Callable, Generic, Optional, Type, TypeVar
 
 from pype import exprs
 from . import vals, funcs
@@ -74,26 +75,40 @@ class _Object(vals.Object):
     '''object'''
 
     # don't waste time deep comparing builtin objects
-    class_: vals.AbstractClass = field(compare=False)
-    _members: vals.Scope = field(compare=False)
+    class_: vals.AbstractClass = field(compare=False, repr=False)
+    _members: vals.Scope = field(compare=False, repr=False)
+
+
+_Value = TypeVar('_Value')
 
 
 @dataclass(frozen=True)
-class Int(_Object):
-    '''int builtin'''
+class _ValueObject(_Object, Generic[_Value]):
 
-    value: int
+    value: _Value
 
-    @staticmethod
-    def for_value(value: int) -> 'Int':
-        '''construct an Int object with the given value'''
-        int_ = Int(IntClass, IntClass.members.as_child(), value)
-        int_.bind_self()
-        return int_
+    def __str__(self) -> str:
+        return str(self.value)
 
-    @property
-    def members(self) -> vals.Scope:
-        return self._members
+    @classmethod
+    @abstractmethod
+    def builtin_class(cls) -> Class:
+        '''the builtin class for this builtin'''
+
+    @classmethod
+    def for_value(cls, value: _Value) -> '_ValueObject[_Value]':
+        object_: '_ValueObject[_Value]' = cls(
+            cls.builtin_class(), cls.builtin_class().members.as_child(), value)
+        object_.bind_self()
+        return object_
+
+
+@dataclass(frozen=True)
+class Int(_ValueObject[int]):
+
+    @classmethod
+    def builtin_class(cls) -> Class:
+        return Class(Int)
 
     def func___add__(self, rhs: vals.Val) -> vals.Val:
         '''add class method'''
@@ -101,11 +116,58 @@ class Int(_Object):
             raise Error(f'invalid Int.__add__ rhs {rhs}')
         return Int.for_value(self.value+rhs.value)
 
+    def func___sub__(self, rhs: vals.Val) -> vals.Val:
+        '''sub class method'''
+        if not isinstance(rhs, Int):
+            raise Error(f'invalid Int.__sub__ rhs {rhs}')
+        return Int.for_value(self.value-rhs.value)
 
-IntClass = Class(Int)
+    def func___mul__(self, rhs: vals.Val) -> vals.Val:
+        '''mul class method'''
+        if not isinstance(rhs, Int):
+            raise Error(f'invalid Int.__mul__ rhs {rhs}')
+        return Int.for_value(self.value*rhs.value)
+
+    def func___div__(self, rhs: vals.Val) -> vals.Val:
+        '''div class method'''
+        if not isinstance(rhs, Int):
+            raise Error(f'invalid Int.__div__ rhs {rhs}')
+        return Float.for_value(self.value/rhs.value)
 
 
 @dataclass(frozen=True)
+class Float(_ValueObject[float]):
+
+    @classmethod
+    def builtin_class(cls) -> Class:
+        return Class(Float)
+
+    def func___add__(self, rhs: vals.Val) -> vals.Val:
+        '''add class method'''
+        if not isinstance(rhs, Float):
+            raise Error(f'invalid Float.__add__ rhs {rhs}')
+        return Float.for_value(self.value+rhs.value)
+
+    def func___sub__(self, rhs: vals.Val) -> vals.Val:
+        '''sub class method'''
+        if not isinstance(rhs, Float):
+            raise Error(f'invalid Float.__sub__ rhs {rhs}')
+        return Float.for_value(self.value-rhs.value)
+
+    def func___mul__(self, rhs: vals.Val) -> vals.Val:
+        '''mul class method'''
+        if not isinstance(rhs, Float):
+            raise Error(f'invalid Float.__mul__ rhs {rhs}')
+        return Float.for_value(self.value*rhs.value)
+
+    def func___div__(self, rhs: vals.Val) -> vals.Val:
+        '''div class method'''
+        if not isinstance(rhs, Float):
+            raise Error(f'invalid Float.__div__ rhs {rhs}')
+        return Float.for_value(self.value/rhs.value)
+
+
+@ dataclass(frozen=True)
 class NoneObject(_Object):
     '''None builtin'''
 

@@ -111,6 +111,23 @@ class Ref(Expr):
 
 
 @dataclass(frozen=True)
+class Member(Expr):
+    '''get a member of an object'''
+
+    object_: Expr
+    name: str
+
+    def __str__(self) -> str:
+        return f'{self.object_}.{self.name}'
+
+    def eval(self, scope: vals.Scope) -> Result:
+        object_ = self.object_.eval(scope).value
+        if self.name not in object_:
+            raise Error(f'unknown member {self.name} in object {object_}')
+        return Result(object_[self.name])
+
+
+@dataclass(frozen=True)
 class Literal(Expr):
     '''literal'''
 

@@ -5,10 +5,6 @@ import unittest
 from pype import exprs, func, loader, builtins_, vals
 
 
-def _int(value: int) -> builtins_.Int:
-    return builtins_.Int.for_value(value)
-
-
 class TestLoader(unittest.TestCase):
     def test_load(self):
         for input_str, expected_expr in list[Tuple[str, exprs.Expr]]([
@@ -23,7 +19,7 @@ class TestLoader(unittest.TestCase):
             (
                 'a = 1;',
                 exprs.Namespace(
-                    [exprs.Assignment('a', exprs.Literal(_int(1)))]),
+                    [exprs.Assignment('a', exprs.Literal(builtins_.Int.for_value(1)))]),
             ),
             (
                 r'def f(a,b) {}',
@@ -55,27 +51,101 @@ class TestLoader(unittest.TestCase):
                     exprs.Call(
                         exprs.Ref('f'),
                         exprs.Args([
-                            exprs.Arg(exprs.Literal(_int(1))),
-                            exprs.Arg(exprs.Literal(_int(2))),
+                            exprs.Arg(exprs.Literal(
+                                builtins_.Int.for_value(1))),
+                            exprs.Arg(exprs.Literal(
+                                builtins_.Int.for_value(2))),
                         ])
                     ),
                 ])
-            )
+            ),
+            (
+                '1 + 2;',
+                exprs.Namespace([
+                    exprs.Call(
+                        exprs.Member(
+                            exprs.Literal(
+                                builtins_.Int.for_value(1)
+                            ),
+                            '__add__'
+                        ),
+                        exprs.Args([
+                            exprs.Arg(exprs.Literal(
+                                builtins_.Int.for_value(2))),
+                        ])
+                    ),
+                ])
+            ),
+            (
+                '1 - 2;',
+                exprs.Namespace([
+                    exprs.Call(
+                        exprs.Member(
+                            exprs.Literal(
+                                builtins_.Int.for_value(1)
+                            ),
+                            '__sub__'
+                        ),
+                        exprs.Args([
+                            exprs.Arg(exprs.Literal(
+                                builtins_.Int.for_value(2))),
+                        ])
+                    ),
+                ])
+            ),
+            (
+                '1 * 2;',
+                exprs.Namespace([
+                    exprs.Call(
+                        exprs.Member(
+                            exprs.Literal(
+                                builtins_.Int.for_value(1)
+                            ),
+                            '__mul__'
+                        ),
+                        exprs.Args([
+                            exprs.Arg(exprs.Literal(
+                                builtins_.Int.for_value(2))),
+                        ])
+                    ),
+                ])
+            ),
+            (
+                '1 / 2;',
+                exprs.Namespace([
+                    exprs.Call(
+                        exprs.Member(
+                            exprs.Literal(
+                                builtins_.Int.for_value(1)
+                            ),
+                            '__div__'
+                        ),
+                        exprs.Args([
+                            exprs.Arg(exprs.Literal(
+                                builtins_.Int.for_value(2))),
+                        ])
+                    ),
+                ])
+            ),
         ]):
             with self.subTest(input_str=input_str, expected_expr=expected_expr):
                 self.assertEqual(expected_expr, loader.load(input_str))
 
     def test_eval(self):
         for input_str, expected_result in list[Tuple[str, vals.Val]]([
-            ('1;', _int(1)),
-            ('a = 1; a;', _int(1)),
+            ('1;', builtins_.Int.for_value(1)),
+            ('a = 1; a;', builtins_.Int.for_value(1)),
             (
                 r'''
                 def f(a) { return a; }
                 f(1);
                 ''',
-                _int(1)
+                builtins_.Int.for_value(1)
             ),
+            ('1 + 2;', builtins_.Int.for_value(3)),
+            ('1 - 2;', builtins_.Int.for_value(-1)),
+            ('1 * 2;', builtins_.Int.for_value(2)),
+            ('1 / 2;', builtins_.Float.for_value(0.5)),
         ]):
             with self.subTest(input_str=input_str, expected_result=expected_result):
                 self.assertEqual(loader.eval_(input_str), expected_result)

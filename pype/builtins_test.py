@@ -92,7 +92,7 @@ class NoneTest(unittest.TestCase):
 
 class IntTest(unittest.TestCase):
     def test_int_class(self):
-        self.assertEqual('Int', builtins_.IntClass.name)
+        self.assertEqual('Int', builtins_.Int.builtin_class().name)
 
     def test_eq(self):
         self.assertEqual(builtins_.Int.for_value(1),
@@ -101,7 +101,7 @@ class IntTest(unittest.TestCase):
                             builtins_.Int.for_value(2))
 
     def test_add(self):
-        self.assertIn('__add__', builtins_.IntClass)
+        self.assertIn('__add__', builtins_.Int.builtin_class())
         val = builtins_.Int.for_value(1)
         self.assertIn('__add__', val)
         add_func = val['__add__']

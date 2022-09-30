@@ -1,6 +1,6 @@
 '''loader'''
 
-from typing import Optional
+from typing import Mapping, Optional
 from core import loader, parser
 from pype import builtins_, exprs, func, vals
 
@@ -65,6 +65,18 @@ def load(input_str: str) -> exprs.Namespace:
             parser.Result.rule_name_is('call_args')))
         return exprs.Call(object_, args)
 
+    def load_binary_operation(result: parser.Result) -> exprs.Expr:
+        METHODS: Mapping[str, str] = {
+            '+': '__add__',
+            '-': '__sub__',
+            '*': '__mul__',
+            '/': '__div__',
+        }
+        lhs, rhs = (load_expr(operand) for operand in result['operand', 2])
+        operator = loader.get_token_value(result['binary_operator', 1])
+        method = METHODS[operator]
+        return exprs.Call(exprs.Member(lhs, method), exprs.Args([exprs.Arg(rhs)]))
+
     load_expr = loader.factory({
         'ref': load_ref,
         'assignment': load_assignment,
@@ -72,6 +84,7 @@ def load(input_str: str) -> exprs.Namespace:
         'func_decl': load_func_decl,
         'return_statement': load_return_statement,
         'call': load_call,
+        'binary_operation': load_binary_operation,
     })
 
     return load_namespace(loader.load_parser(r'''
@@ -81,7 +94,8 @@ def load(input_str: str) -> exprs.Namespace:
 
         root => statement+;
         statement => func_decl | ((return_statement | assignment | expr) ";");
-        expr => call | ref | literal;
+        expr => binary_operation | operand;
+        operand => call | ref | literal;
         ref => id;
         assignment => assignment_name "=" assignment_value;
         assignment_name => id;
@@ -100,6 +114,8 @@ def load(input_str: str) -> exprs.Namespace:
         call_object => ref;
         call_args => args;
         args => "(" (expr ("," expr)*)? ")";
+        binary_operation => operand binary_operator operand;
+        binary_operator => "+" | "-" | "*" | "/";
     ''').apply(input_str))
 
 
