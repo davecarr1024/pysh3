@@ -13,7 +13,7 @@ class Error(Exception):
 
 
 @dataclass(frozen=True)
-class BuiltinFunc(funcs.AbstractFunc):
+class Func(funcs.AbstractFunc):
     '''builtin func'''
 
     func: Callable[..., vals.Val]
@@ -42,7 +42,7 @@ _BUILTIN_CLASS_FUNC_PREFIX = 'func_'
 
 
 @dataclass(frozen=True)
-class BuiltinClass(vals.AbstractClass):
+class Class(vals.AbstractClass):
     '''builtin class'''
 
     __object_type: Type['vals.Object']
@@ -53,7 +53,7 @@ class BuiltinClass(vals.AbstractClass):
         for name, val in self._object_type.__dict__.items():
             if name.startswith(_BUILTIN_CLASS_FUNC_PREFIX):
                 func_name = name[len(_BUILTIN_CLASS_FUNC_PREFIX):]
-                func = funcs.BindableFunc(BuiltinFunc(val))
+                func = funcs.BindableFunc(Func(val))
                 self._members[func_name] = func
 
     @property
@@ -70,7 +70,16 @@ class BuiltinClass(vals.AbstractClass):
 
 
 @dataclass(frozen=True)
-class Int(vals.Object):
+class _Object(vals.Object):
+    '''object'''
+
+    # don't waste time deep comparing builtin objects
+    class_: vals.AbstractClass = field(compare=False)
+    _members: vals.Scope = field(compare=False)
+
+
+@dataclass(frozen=True)
+class Int(_Object):
     '''int builtin'''
 
     value: int
@@ -93,13 +102,13 @@ class Int(vals.Object):
         return Int.for_value(self.value+rhs.value)
 
 
-IntClass = BuiltinClass(Int)
+IntClass = Class(Int)
 
 
 @dataclass(frozen=True)
-class NoneObject(vals.Object):
+class NoneObject(_Object):
     '''None builtin'''
 
 
-NoneClass = BuiltinClass(NoneObject, _name='NoneClass')
+NoneClass = Class(NoneObject, _name='NoneClass')
 none = NoneObject(NoneClass, NoneClass.members.as_child())

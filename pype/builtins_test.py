@@ -30,7 +30,7 @@ class BuiltinFuncTest(unittest.TestCase):
         ]):
             with self.subTest(func=func, expected_params=expected_params):
                 self.assertEqual(
-                    builtins_.BuiltinFunc(func).params,
+                    builtins_.Func(func).params,
                     expected_params
                 )
 
@@ -51,7 +51,7 @@ class BuiltinFuncTest(unittest.TestCase):
         ]):
             with self.subTest(func=func):
                 with self.assertRaises(builtins_.Error):
-                    _ = builtins_.BuiltinFunc(func).params
+                    _ = builtins_.Func(func).params
 
     def test_apply(self):
         def f_1() -> vals.Val:
@@ -76,7 +76,7 @@ class BuiltinFuncTest(unittest.TestCase):
                 ])):
             with self.subTest(func=func, args=args, expected_result=expected_result):
                 self.assertEqual(
-                    builtins_.BuiltinFunc(func).apply(
+                    builtins_.Func(func).apply(
                         vals.Scope.default(), args),
                     expected_result
                 )

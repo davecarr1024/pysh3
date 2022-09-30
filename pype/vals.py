@@ -213,13 +213,16 @@ class Class(AbstractClass):
 
 @dataclass(frozen=True)
 class Object(Val, ABC):
-    '''abstract object'''
+    '''object'''
 
     class_: AbstractClass
     _members: Scope
 
     def bind_self(self) -> None:
-        '''bind this object's scope to itself'''
+        '''bind this object's scope to itself
+
+        Note that this must be called after construction of an object before it can be used.
+        '''
         self._members.bind_self(self)
 
     @property
