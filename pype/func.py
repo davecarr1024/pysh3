@@ -26,14 +26,14 @@ class Func(funcs.AbstractFunc):
     '''func'''
 
     name: str
-    _params: funcs.Params
+    _params: exprs.Params
     body: Sequence[exprs.Expr]
 
     @property
-    def params(self) -> funcs.Params:
+    def params(self) -> exprs.Params:
         return self._params
 
-    def apply(self, scope: vals.Scope, args: Sequence[vals.Val]) -> vals.Val:
+    def apply(self, scope: vals.Scope, args: vals.Args) -> vals.Val:
         '''apply'''
         if len(self.params) != len(args):
             raise funcs.Error(

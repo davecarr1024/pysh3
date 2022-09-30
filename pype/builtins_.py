@@ -2,7 +2,9 @@
 
 from dataclasses import dataclass, field
 import inspect
-from typing import Callable, Optional, Sequence, Type
+from typing import Callable, Optional, Type
+
+from pype import exprs
 from . import vals, funcs
 
 
@@ -14,13 +16,13 @@ class Error(Exception):
 class BuiltinFunc(funcs.AbstractFunc):
     '''builtin func'''
 
-    func: Callable[[vals.Scope, Sequence[vals.Val]], vals.Val]
+    func: Callable[[vals.Scope, vals.Args], vals.Val]
 
     @property
-    def params(self) -> Sequence[str]:
+    def params(self) -> exprs.Params:
         raise NotImplementedError(inspect.getfullargspec(self.func))
 
-    def apply(self, scope: vals.Scope, args: Sequence[vals.Val]) -> vals.Val:
+    def apply(self, scope: vals.Scope, args: vals.Args) -> vals.Val:
         return self.func(scope, args)
 
 

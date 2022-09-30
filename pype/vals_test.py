@@ -4,6 +4,18 @@ import unittest
 from pype import builtins_, vals
 
 
+class ArgsTest(unittest.TestCase):
+    def test_prepend(self):
+        self.assertEqual(
+            vals.Args([
+                vals.Arg(builtins_.Int(value=2)),
+            ]).prepend(vals.Arg(builtins_.Int(value=1))),
+            vals.Args([
+                vals.Arg(builtins_.Int(value=1)),
+                vals.Arg(builtins_.Int(value=2)),
+            ]))
+
+
 class ScopeTest(unittest.TestCase):
     def test_contains(self):
         self.assertIn('a', vals.Scope(None, {'a': vals.Val()}))

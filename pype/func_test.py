@@ -1,6 +1,6 @@
 # pylint: disable=missing-module-docstring,missing-class-docstring,missing-function-docstring
 
-from typing import Sequence, Tuple
+from typing import Tuple
 import unittest
 from pype import func, funcs, vals, exprs, builtins_
 
@@ -37,7 +37,7 @@ class TestFunc(unittest.TestCase):
         self.assertEqual(
             func.Func(
                 'f',
-                funcs.Params([]),
+                exprs.Params([]),
                 [
                     exprs.Assignment('a', exprs.Literal(
                         builtins_.Int(value=1))),
@@ -45,7 +45,7 @@ class TestFunc(unittest.TestCase):
                     exprs.Assignment('a', exprs.Literal(
                         builtins_.Int(value=2))),
                 ],
-            ).apply(scope, []),
+            ).apply(scope, vals.Args([])),
             builtins_.Int(value=1))
         self.assertNotIn('a', scope)
 
@@ -54,23 +54,24 @@ class TestFunc(unittest.TestCase):
         self.assertEqual(
             func.Func(
                 'f',
-                funcs.Params([funcs.Param('a')]),
+                exprs.Params([exprs.Param('a')]),
                 [
                     func.Return(exprs.Ref('a')),
                 ],
-            ).apply(scope, [builtins_.Int(value=1)]),
+            ).apply(scope, vals.Args([vals.Arg(builtins_.Int(value=1))])),
             builtins_.Int(value=1))
         self.assertNotIn('a', scope)
 
     def test_apply_fail(self):
-        for func_, args in list[Tuple[func.Func, Sequence[vals.Val]]]([
+        for func_, args in list[Tuple[func.Func, vals.Args]]([
             (
-                func.Func('f', funcs.Params([funcs.Param('a')]), []),
-                [],
+                func.Func('f', exprs.Params([exprs.Param('a')]), []),
+                vals.Args([]),
             ),
             (
-                func.Func('f', funcs.Params([funcs.Param('a')]), []),
-                [builtins_.Int(value=1), builtins_.Int(value=2)],
+                func.Func('f', exprs.Params([exprs.Param('a')]), []),
+                vals.Args([vals.Arg(builtins_.Int(value=1)),
+                          vals.Arg(builtins_.Int(value=2))]),
             ),
         ]):
             with self.subTest(func=func_, args=args):

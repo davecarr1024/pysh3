@@ -2,46 +2,11 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Iterable, Iterator, MutableSequence, Sequence
-from pype import vals
+from pype import vals, exprs
 
 
 class Error(Exception):
     '''funcs error'''
-
-
-@dataclass(frozen=True)
-class Param:
-    '''param'''
-
-    name: str
-
-
-@dataclass(frozen=True)
-class Params(Iterable[Param]):
-    '''params'''
-
-    params: Sequence[Param]
-
-    def __len__(self) -> int:
-        return len(self.params)
-
-    def __iter__(self) -> Iterator[Param]:
-        return iter(self.params)
-
-    @property
-    def tail(self) -> 'Params':
-        '''return self without the first param'''
-        if len(self.params) == 0:
-            raise Error('empty params')
-        return Params(self.params[1:])
-
-    def bind(self, scope: vals.Scope, args: Sequence[vals.Val]) -> vals.Scope:
-        '''bind the given args in a new scope'''
-        if len(self.params) != len(args):
-            raise Error(
-                f'param mismatch: expected {len(self.params)} args got {len(args)}')
-        return scope.as_child(**{param.name: arg for param, arg in zip(self.params, args)})
 
 
 class AbstractFunc(vals.Val, ABC):
@@ -49,11 +14,11 @@ class AbstractFunc(vals.Val, ABC):
 
     @property
     @abstractmethod
-    def params(self) -> Params:
+    def params(self) -> exprs.Params:
         '''params'''
 
     @abstractmethod
-    def apply(self, scope: vals.Scope, args: Sequence[vals.Val]) -> vals.Val:
+    def apply(self, scope: vals.Scope, args: vals.Args) -> vals.Val:
         ...
 
 
@@ -69,10 +34,10 @@ class BindableFunc(AbstractFunc):
                 f'unable to create bindable func from func {self.func} with 0 params')
 
     @property
-    def params(self) -> Params:
+    def params(self) -> exprs.Params:
         return self.func.params
 
-    def apply(self, scope: vals.Scope, args: Sequence[vals.Val]) -> vals.Val:
+    def apply(self, scope: vals.Scope, args: vals.Args) -> vals.Val:
         return self.func.apply(scope, args)
 
     @property
@@ -95,10 +60,8 @@ class BoundFunc(AbstractFunc):
             raise Error(f'unable to bind func {self.func} with 0 params')
 
     @property
-    def params(self) -> Params:
+    def params(self) -> exprs.Params:
         return self.func.params.tail
 
-    def apply(self, scope: vals.Scope, args: Sequence[vals.Val]) -> vals.Val:
-        bound_args: MutableSequence[vals.Val] = [self.object_]
-        bound_args.extend(args)
-        return self.func.apply(scope, bound_args)
+    def apply(self, scope: vals.Scope, args: vals.Args) -> vals.Val:
+        return self.func.apply(scope, args.prepend(vals.Arg(self.object_)))

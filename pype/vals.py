@@ -3,6 +3,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import (
+    Iterable,
     Iterator,
     Mapping,
     MutableMapping,
@@ -16,19 +17,43 @@ class Error(Exception):
     '''vals error'''
 
 
+@dataclass(frozen=True)
+class Arg:
+    '''arg'''
+
+    value: 'Val'
+
+
+@dataclass(frozen=True)
+class Args(Iterable[Arg]):
+    '''args'''
+
+    _args: Sequence[Arg]
+
+    def __len__(self) -> int:
+        return len(self._args)
+
+    def __iter__(self) -> Iterator[Arg]:
+        return iter(self._args)
+
+    def prepend(self, arg: Arg) -> 'Args':
+        '''prepend the given arg to these args'''
+        return Args([arg] + list(self._args))
+
+
 class Val(ABC):
     '''val'''
 
-    def apply(self, scope: 'Scope', args: Sequence['Val']) -> 'Val':
+    def apply(self, scope: 'Scope', args: Args) -> 'Val':
         '''apply'''
         raise Error(f'applying uncallable val {self}')
 
-    @property
+    @ property
     def members(self) -> 'Scope':
         '''members'''
         return Scope()
 
-    @property
+    @ property
     def can_bind(self) -> bool:
         '''can this val be bound to an instance'''
         return False
@@ -46,7 +71,7 @@ class Val(ABC):
         return self.members[name]
 
 
-@dataclass(frozen=True)
+@ dataclass(frozen=True)
 class Scope:
     '''scope'''
 
@@ -70,12 +95,12 @@ class Scope:
     def __setitem__(self, name: str, val: Val) -> None:
         self._vals[name] = val
 
-    @property
+    @ property
     def vals(self) -> Mapping[str, Val]:
         '''vals'''
         return self._vals
 
-    @property
+    @ property
     def all_vals(self) -> Mapping[str, Val]:
         '''all vals contained in this scope and its parents'''
         vals: MutableMapping[str, Val] = {}
@@ -104,19 +129,19 @@ class Scope:
         '''bind this scope to the given object'''
         self._vals.update(self.bind_vals(object_))
 
-    @staticmethod
+    @ staticmethod
     def default() -> 'Scope':
         '''default scope'''
         return Scope()
 
 
-@dataclass(frozen=True)
+@ dataclass(frozen=True)
 class Namespace(Val):
     '''namespace'''
 
     _members: Scope
 
-    @property
+    @ property
     def members(self) -> Scope:
         return self._members
 
@@ -124,44 +149,44 @@ class Namespace(Val):
 class AbstractClass(Val, ABC):
     '''abstract class'''
 
-    @property
-    @abstractmethod
+    @ property
+    @ abstractmethod
     def name(self) -> str:
         '''name of this class'''
 
-    @property
-    @abstractmethod
+    @ property
+    @ abstractmethod
     def members(self) -> Scope:
         ...
 
-    @property
+    @ property
     def _object_type(self) -> Type['Object']:
         return Object
 
-    def apply(self, scope: Scope, args: Sequence[Val]) -> 'Object':
+    def apply(self, scope: Scope, args: Args) -> 'Object':
         object_ = self._object_type(self, self.members.as_child())
         if '__init__' in object_:
             object_['__init__'].apply(scope, args)
         return object_
 
 
-@dataclass(frozen=True)
+@ dataclass(frozen=True)
 class Class(AbstractClass):
     '''class'''
 
     _name: str
     _members: Scope
 
-    @property
+    @ property
     def name(self) -> str:
         return self._name
 
-    @property
+    @ property
     def members(self) -> Scope:
         return self._members
 
 
-@dataclass(frozen=True)
+@ dataclass(frozen=True)
 class Object(Val):
     '''object'''
 
@@ -171,11 +196,11 @@ class Object(Val):
     def __post_init__(self):
         self._members.bind_self(self)
 
-    @property
+    @ property
     def members(self) -> Scope:
         return self._members
 
-    def apply(self, scope: Scope, args: Sequence[Val]) -> Val:
+    def apply(self, scope: Scope, args: Args) -> Val:
         if '__call__' not in self:
             raise Error(f'object {self} not callable')
         return self['__call__'].apply(scope, args)
