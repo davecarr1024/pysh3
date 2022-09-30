@@ -5,7 +5,7 @@ import unittest
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Generic, Tuple, TypeVar
-from . import processor
+from core import processor
 
 _Processor = processor.Processor[int, int]
 _Result = processor.Result[int]

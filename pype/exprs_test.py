@@ -2,7 +2,7 @@
 
 from typing import Tuple
 import unittest
-from . import exprs, vals, builtins_
+from pype import exprs, vals, builtins_
 
 
 class TestExpr(unittest.TestCase):

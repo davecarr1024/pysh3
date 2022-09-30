@@ -2,7 +2,7 @@
 
 from typing import Sequence, Tuple
 import unittest
-from . import func, funcs, vals, exprs, builtins_
+from pype import func, funcs, vals, exprs, builtins_
 
 
 class TestReturn(unittest.TestCase):

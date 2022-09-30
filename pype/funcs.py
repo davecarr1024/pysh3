@@ -3,7 +3,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import MutableSequence, Sequence
-from . import vals
+from pype import vals
 
 
 class Error(Exception):

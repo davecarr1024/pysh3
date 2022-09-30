@@ -2,7 +2,7 @@
 
 from collections import OrderedDict
 from typing import Callable, Container, Mapping, MutableMapping, Optional, Tuple, Type, TypeVar
-from . import lexer, parser, processor
+from core import lexer, parser, processor
 
 Error = processor.Error
 

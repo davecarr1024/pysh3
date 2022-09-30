@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 import string
 from typing import Mapping, MutableSequence, OrderedDict, Sequence, Type
-from . import stream, processor
+from core import stream, processor
 
 
 class Error(processor.Error):

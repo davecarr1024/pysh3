@@ -3,7 +3,7 @@
 import collections
 import string
 from typing import Tuple
-from . import lexer, parser, processor_test
+from core import lexer, parser, processor_test
 
 
 class ParserTest(processor_test.ProcessorTestCase[lexer.Token, lexer.TokenStream]):

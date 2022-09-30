@@ -5,7 +5,7 @@ import string
 from typing import Tuple
 import unittest
 
-from . import lexer, processor_test
+from core import lexer, processor_test
 
 
 class CharTest(unittest.TestCase):

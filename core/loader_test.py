@@ -3,7 +3,7 @@
 from collections import OrderedDict
 from typing import Tuple
 import unittest
-from . import lexer, parser, loader
+from core import lexer, parser, loader
 
 if 'unittest.util' in __import__('sys').modules:
     # Show full diff in self.assertEqual.

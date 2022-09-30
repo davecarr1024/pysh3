@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from typing import Type
-from . import processor, lexer, stream
+from core import processor, lexer, stream
 
 
 class Error(processor.Error):

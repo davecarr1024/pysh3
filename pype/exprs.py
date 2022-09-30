@@ -3,8 +3,8 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Sequence
-from ..core import loader, parser
-from . import vals, builtins_
+from core import loader, parser
+from pype import vals, builtins_
 
 
 class Error(Exception):

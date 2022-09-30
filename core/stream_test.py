@@ -1,7 +1,7 @@
 # pylint: disable=missing-module-docstring,missing-class-docstring,missing-function-docstring
 
 import unittest
-from . import stream
+from core import stream
 
 
 _Stream = stream.Stream[int]

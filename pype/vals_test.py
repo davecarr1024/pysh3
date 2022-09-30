@@ -1,7 +1,7 @@
 # pylint: disable=missing-module-docstring,missing-class-docstring,missing-function-docstring
 
 import unittest
-from . import builtins_, vals
+from pype import builtins_, vals
 
 
 class ScopeTest(unittest.TestCase):

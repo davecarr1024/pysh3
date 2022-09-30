@@ -3,8 +3,8 @@
 from dataclasses import dataclass
 from typing import Optional, Sequence
 
-from ..core import parser
-from . import vals, exprs, builtins_, funcs
+from core import parser
+from pype import vals, exprs, builtins_, funcs
 
 
 @dataclass(frozen=True)
