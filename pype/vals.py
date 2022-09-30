@@ -73,7 +73,7 @@ class Val(ABC):
 
 
 @ dataclass(frozen=True)
-class Scope:
+class Scope(MutableMapping[str, Val]):
     '''scope'''
 
     parent: Optional['Scope'] = None
@@ -83,8 +83,10 @@ class Scope:
     def __iter__(self) -> Iterator[str]:
         return iter(self._vals)
 
-    def __contains__(self, name: str) -> bool:
-        return name in self._vals or (self.parent is not None and name in self.parent)
+    def __contains__(self, name: object) -> bool:
+        return (isinstance(name, str)
+                and (name in self._vals
+                     or (self.parent is not None and name in self.parent)))
 
     def __getitem__(self, name: str) -> Val:
         if name in self._vals:
@@ -95,6 +97,12 @@ class Scope:
 
     def __setitem__(self, name: str, val: Val) -> None:
         self._vals[name] = val
+
+    def __delitem__(self, name: str) -> None:
+        del self._vals[name]
+
+    def __len__(self) -> int:
+        return len(self._vals)
 
     @ property
     def vals(self) -> Mapping[str, Val]:
