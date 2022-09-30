@@ -5,6 +5,29 @@ import unittest
 from pype import exprs, func, vals, builtins_
 
 
+class TestArg(unittest.TestCase):
+    def test_eval(self):
+        self.assertEqual(
+            exprs.Arg(exprs.Literal(builtins_.Int(value=1))
+                      ).eval(vals.Scope()),
+            vals.Arg(builtins_.Int(value=1))
+        )
+
+
+class TestArgs(unittest.TestCase):
+    def test_eval(self):
+        self.assertEqual(
+            exprs.Args([
+                exprs.Arg(exprs.Literal(builtins_.Int(value=1))),
+                exprs.Arg(exprs.Literal(builtins_.Int(value=2))),
+            ]).eval(vals.Scope()),
+            vals.Args([
+                vals.Arg(builtins_.Int(value=1)),
+                vals.Arg(builtins_.Int(value=2)),
+            ])
+        )
+
+
 class TestParam(unittest.TestCase):
     def test_bind(self):
         scope = vals.Scope()

@@ -9,6 +9,7 @@ from typing import (
     MutableMapping,
     Optional,
     Sequence,
+    Sized,
     Type,
 )
 
@@ -25,7 +26,7 @@ class Arg:
 
 
 @dataclass(frozen=True)
-class Args(Iterable[Arg]):
+class Args(Iterable[Arg], Sized):  # pylint: disable=duplicate-code
     '''args'''
 
     _args: Sequence[Arg]

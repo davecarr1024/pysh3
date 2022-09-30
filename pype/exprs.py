@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Iterable, Iterator, Sequence
+from typing import Iterable, Iterator, Sequence, Sized
 from pype import vals
 
 
@@ -22,7 +22,7 @@ class Arg:
 
 
 @dataclass(frozen=True)
-class Args(Iterable[Arg]):
+class Args(Iterable[Arg], Sized):
     '''args'''
 
     _args: Sequence[Arg]
@@ -32,13 +32,6 @@ class Args(Iterable[Arg]):
 
     def __iter__(self) -> Iterator[Arg]:
         return iter(self._args)
-
-    @property
-    def tail(self) -> 'Args':
-        '''get self without the first arg'''
-        if len(self._args) == 0:
-            raise Error('getting tail of empty args')
-        return Args(self._args[1:])
 
     def eval(self, scope: vals.Scope) -> vals.Args:
         '''evaluate the set of args in the given scope'''
@@ -57,7 +50,7 @@ class Param:
 
 
 @dataclass(frozen=True)
-class Params(Iterable[Param]):
+class Params(Iterable[Param], Sized):
     '''params'''
 
     _params: Sequence[Param]
