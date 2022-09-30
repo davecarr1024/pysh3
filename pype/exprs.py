@@ -178,3 +178,17 @@ class Call(Expr):
 
     def eval(self, scope: vals.Scope) -> Result:
         return Result(self.object_.eval(scope).value.apply(scope, self.args.eval(scope)))
+
+
+@dataclass(frozen=True)
+class Class(Expr):
+    '''class'''
+
+    name: str
+    body: Sequence[Expr]
+
+    def eval(self, scope: vals.Scope) -> Result:
+        members = scope.as_child()
+        for expr in self.body:
+            expr.eval(members)
+        return Result(vals.Class(self.name, members))

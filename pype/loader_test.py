@@ -127,6 +127,20 @@ class TestLoader(unittest.TestCase):
                     ),
                 ])
             ),
+            (
+                'class c { a; }',
+                exprs.Namespace([
+                    exprs.Assignment(
+                        'c',
+                        exprs.Class(
+                            'c',
+                            [
+                                exprs.Ref('a'),
+                            ]
+                        )
+                    ),
+                ])
+            ),
         ]):
             with self.subTest(input_str=input_str, expected_expr=expected_expr):
                 self.assertEqual(expected_expr, loader.load(input_str))
@@ -150,6 +164,10 @@ class TestLoader(unittest.TestCase):
                 'def f(a,b) { return a + b; } f(1,2);',
                 builtins_.Int.for_value(3)
             ),
+            # (
+            #     'class c { a = 1; } c.a;',
+            #     builtins_.Int.for_value(1)
+            # ),
         ]):
             with self.subTest(input_str=input_str, expected_result=expected_result):
                 self.assertEqual(loader.eval_(input_str), expected_result)

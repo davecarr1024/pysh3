@@ -77,6 +77,11 @@ def load(input_str: str) -> exprs.Namespace:
         method = methods[operator]
         return exprs.Call(exprs.Member(lhs, method), exprs.Args([exprs.Arg(rhs)]))
 
+    def load_class_decl(result: parser.Result) -> exprs.Expr:
+        name = loader.get_token_value(result['class_name', 1])
+        body = [load_expr(expr) for expr in result['class_body', 1]['expr']]
+        return exprs.Assignment(name, exprs.Class(name, body))
+
     load_expr = loader.factory({
         'ref': load_ref,
         'assignment': load_assignment,
@@ -85,6 +90,7 @@ def load(input_str: str) -> exprs.Namespace:
         'return_statement': load_return_statement,
         'call': load_call,
         'binary_operation': load_binary_operation,
+        'class_decl': load_class_decl,
     })
 
     return load_namespace(loader.load_parser(r'''
@@ -93,7 +99,7 @@ def load(input_str: str) -> exprs.Namespace:
         int = "[1-9][0-9]*";
 
         root => statement+;
-        statement => func_decl | ((return_statement | assignment | expr) ";");
+        statement => class_decl | func_decl | ((return_statement | assignment | expr) ";");
         expr => binary_operation | operand;
         operand => call | ref | literal;
         ref => id;
@@ -116,6 +122,9 @@ def load(input_str: str) -> exprs.Namespace:
         args => "(" (expr ("," expr)*)? ")";
         binary_operation => operand binary_operator operand;
         binary_operator => "+" | "-" | "*" | "/";
+        class_decl => "class" class_name "{" class_body "}";
+        class_name => id;
+        class_body => statement*;
     ''').apply(input_str))
 
 

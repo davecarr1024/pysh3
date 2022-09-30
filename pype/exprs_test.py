@@ -4,6 +4,13 @@ from typing import Tuple
 import unittest
 from pype import exprs, func, vals, builtins_
 
+if 'unittest.util' in __import__('sys').modules:
+    # Show full diff in self.assertEqual.
+    # pylint: disable=protected-access
+    __import__(
+        'sys').modules['unittest.util']._MAX_LENGTH = 999999999
+    # pylint: enable=protected-access
+
 
 class TestArg(unittest.TestCase):
     def test_eval(self):
@@ -146,3 +153,25 @@ class TestCall(unittest.TestCase):
                 )
             ]).eval(vals.Scope()).value.members['c'],
             builtins_.Int.for_value(1))
+
+
+class TestClass(unittest.TestCase):
+    def test_eval(self):
+        self.assertEqual(
+            exprs.Class(
+                'c',
+                [
+                    exprs.Assignment('a', exprs.Literal(
+                        builtins_.Int.for_value(1))),
+                ]
+            ).eval(vals.Scope()).value,
+            vals.Class(
+                'c',
+                vals.Scope(
+                    vals.Scope(),
+                    {
+                        'a': builtins_.Int.for_value(1),
+                    }
+                )
+            )
+        )
