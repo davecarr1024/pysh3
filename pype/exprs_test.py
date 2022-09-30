@@ -8,9 +8,9 @@ from pype import exprs, func, vals, builtins_
 class TestArg(unittest.TestCase):
     def test_eval(self):
         self.assertEqual(
-            exprs.Arg(exprs.Literal(builtins_.Int(value=1))
+            exprs.Arg(exprs.Literal(builtins_.Int.for_value(1))
                       ).eval(vals.Scope()),
-            vals.Arg(builtins_.Int(value=1))
+            vals.Arg(builtins_.Int.for_value(1))
         )
 
 
@@ -18,12 +18,12 @@ class TestArgs(unittest.TestCase):
     def test_eval(self):
         self.assertEqual(
             exprs.Args([
-                exprs.Arg(exprs.Literal(builtins_.Int(value=1))),
-                exprs.Arg(exprs.Literal(builtins_.Int(value=2))),
+                exprs.Arg(exprs.Literal(builtins_.Int.for_value(1))),
+                exprs.Arg(exprs.Literal(builtins_.Int.for_value(2))),
             ]).eval(vals.Scope()),
             vals.Args([
-                vals.Arg(builtins_.Int(value=1)),
-                vals.Arg(builtins_.Int(value=2)),
+                vals.Arg(builtins_.Int.for_value(1)),
+                vals.Arg(builtins_.Int.for_value(2)),
             ])
         )
 
@@ -31,10 +31,10 @@ class TestArgs(unittest.TestCase):
 class TestParam(unittest.TestCase):
     def test_bind(self):
         scope = vals.Scope()
-        exprs.Param('a').bind(scope, vals.Arg(builtins_.Int(value=1)))
+        exprs.Param('a').bind(scope, vals.Arg(builtins_.Int.for_value(1)))
         self.assertEqual(
             scope['a'],
-            builtins_.Int(value=1)
+            builtins_.Int.for_value(1)
         )
 
 
@@ -63,12 +63,12 @@ class TestParams(unittest.TestCase):
                 exprs.Param('a'),
                 exprs.Param('b'),
             ]).bind(vals.Scope(), vals.Args([
-                vals.Arg(builtins_.Int(value=1)),
-                vals.Arg(builtins_.Int(value=2)),
+                vals.Arg(builtins_.Int.for_value(1)),
+                vals.Arg(builtins_.Int.for_value(2)),
             ])),
             vals.Scope(vals.Scope(), {
-                'a': builtins_.Int(value=1),
-                'b': builtins_.Int(value=2),
+                'a': builtins_.Int.for_value(1),
+                'b': builtins_.Int.for_value(2),
             })
         )
 
@@ -81,8 +81,8 @@ class TestRef(unittest.TestCase):
     def test_eval(self):
         self.assertEqual(
             exprs.Ref('a').eval(vals.Scope(
-                None, {'a': builtins_.Int(value=1)})),
-            exprs.Result(builtins_.Int(value=1))
+                None, {'a': builtins_.Int.for_value(1)})),
+            exprs.Result(builtins_.Int.for_value(1))
         )
 
     def test_eval_fail(self):
@@ -93,8 +93,8 @@ class TestRef(unittest.TestCase):
 class TestLiteral(unittest.TestCase):
     def test_eval(self):
         self.assertEqual(
-            exprs.Literal(builtins_.Int(value=1)).eval(vals.Scope()),
-            exprs.Result(builtins_.Int(value=1))
+            exprs.Literal(builtins_.Int.for_value(1)).eval(vals.Scope()),
+            exprs.Result(builtins_.Int.for_value(1))
         )
 
 
@@ -102,20 +102,20 @@ class TestAssignment(unittest.TestCase):
     def test_eval(self):
         scope = vals.Scope()
         exprs.Assignment('a', exprs.Literal(
-            builtins_.Int(value=1))).eval(scope)
-        self.assertEqual(scope['a'], builtins_.Int(value=1))
+            builtins_.Int.for_value(1))).eval(scope)
+        self.assertEqual(scope['a'], builtins_.Int.for_value(1))
 
 
 class TestNamespace(unittest.TestCase):
     def test_eval(self):
         scope = vals.Scope()
         namespace: vals.Val = exprs.Namespace([
-            exprs.Literal(builtins_.Int(value=1)),
-            exprs.Assignment('a', exprs.Literal(builtins_.Int(value=2))),
+            exprs.Literal(builtins_.Int.for_value(1)),
+            exprs.Assignment('a', exprs.Literal(builtins_.Int.for_value(2))),
         ]).eval(scope).value
         self.assertNotIn('a', scope)
         self.assertIn('a', namespace.members)
-        self.assertEqual(namespace['a'], builtins_.Int(value=2))
+        self.assertEqual(namespace['a'], builtins_.Int.for_value(2))
 
 
 class TestCall(unittest.TestCase):
@@ -137,10 +137,12 @@ class TestCall(unittest.TestCase):
                     exprs.Call(
                         exprs.Ref('f'),
                         exprs.Args([
-                            exprs.Arg(exprs.Literal(builtins_.Int(value=1))),
-                            exprs.Arg(exprs.Literal(builtins_.Int(value=2))),
+                            exprs.Arg(exprs.Literal(
+                                builtins_.Int.for_value(1))),
+                            exprs.Arg(exprs.Literal(
+                                builtins_.Int.for_value(2))),
                         ])
                     )
                 )
             ]).eval(vals.Scope()).value.members['c'],
-            builtins_.Int(value=1))
+            builtins_.Int.for_value(1))

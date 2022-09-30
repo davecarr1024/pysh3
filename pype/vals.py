@@ -7,6 +7,7 @@ from typing import (
     Iterator,
     Mapping,
     MutableMapping,
+    MutableSequence,
     Optional,
     Sequence,
     Sized,
@@ -42,7 +43,7 @@ class Args(Iterable[Arg], Sized):  # pylint: disable=duplicate-code
         return Args([arg] + list(self._args))
 
 
-class Val(ABC):
+class Val(ABC, Mapping[str, 'Val']):
     '''val'''
 
     def apply(self, scope: 'Scope', args: Args) -> 'Val':
@@ -63,8 +64,14 @@ class Val(ABC):
         '''bind'''
         raise Error(f'binding unbindable val {self}')
 
-    def __contains__(self, name: str) -> bool:
+    def __contains__(self, name: object) -> bool:
         return name in self.members
+
+    def __len__(self) -> int:
+        return len(self.members)
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self.members)
 
     def __getitem__(self, name: str) -> 'Val':
         if name not in self.members:
@@ -79,6 +86,14 @@ class Scope(MutableMapping[str, Val]):
     parent: Optional['Scope'] = None
     _vals: MutableMapping[str, Val] = field(
         default_factory=dict[str, Val])
+
+    def __post_init__(self):
+        descendents: MutableSequence[Scope] = list[Scope]((self,))
+        scope = self
+        while scope.parent is not None:
+            scope = scope.parent
+            assert all(scope is not descendent for descendent in descendents)
+            descendents.append(scope)
 
     def __iter__(self) -> Iterator[str]:
         return iter(self._vals)
@@ -174,6 +189,7 @@ class AbstractClass(Val, ABC):
 
     def apply(self, scope: Scope, args: Args) -> 'Object':
         object_ = self._object_type(self, self.members.as_child())
+        object_.bind_self()
         if '__init__' in object_:
             object_['__init__'].apply(scope, args)
         return object_
@@ -196,17 +212,19 @@ class Class(AbstractClass):
 
 
 @dataclass(frozen=True)
-class Object(Val):
-    '''object'''
+class Object(Val, ABC):
+    '''abstract object'''
 
     class_: AbstractClass
     _members: Scope
 
-    def __post_init__(self):
+    def bind_self(self) -> None:
+        '''bind this object's scope to itself'''
         self._members.bind_self(self)
 
     @property
     def members(self) -> Scope:
+        '''members'''
         return self._members
 
     def apply(self, scope: Scope, args: Args) -> Val:

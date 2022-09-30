@@ -6,7 +6,7 @@ from pype import exprs, func, loader, builtins_, vals
 
 
 def _int(value: int) -> builtins_.Int:
-    return builtins_.Int(value=value)
+    return builtins_.Int.for_value(value)
 
 
 class TestLoader(unittest.TestCase):

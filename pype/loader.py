@@ -34,7 +34,7 @@ def load(input_str: str) -> exprs.Namespace:
 
     def load_literal(result: parser.Result) -> exprs.Expr:
         def load_int_literal(lit: parser.Result) -> exprs.Expr:
-            return exprs.Literal(builtins_.Int(value=int(loader.get_token_value(lit))))
+            return exprs.Literal(builtins_.Int.for_value(int(loader.get_token_value(lit))))
 
         return loader.factory({
             'int_literal': load_int_literal,

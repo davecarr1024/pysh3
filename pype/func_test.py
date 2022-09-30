@@ -16,8 +16,8 @@ class TestReturn(unittest.TestCase):
     def test_eval(self):
         for return_, expected_result in list[Tuple[func.Return, exprs.Result]]([
             (
-                func.Return(exprs.Literal(builtins_.Int(value=1))),
-                exprs.Result(builtins_.Int(value=1), is_return=True)
+                func.Return(exprs.Literal(builtins_.Int.for_value(1))),
+                exprs.Result(builtins_.Int.for_value(1), is_return=True)
             ),
             (
                 func.Return(None),
@@ -40,13 +40,13 @@ class TestFunc(unittest.TestCase):
                 exprs.Params([]),
                 [
                     exprs.Assignment('a', exprs.Literal(
-                        builtins_.Int(value=1))),
+                        builtins_.Int.for_value(1))),
                     func.Return(exprs.Ref('a')),
                     exprs.Assignment('a', exprs.Literal(
-                        builtins_.Int(value=2))),
+                        builtins_.Int.for_value(2))),
                 ],
             ).apply(scope, vals.Args([])),
-            builtins_.Int(value=1))
+            builtins_.Int.for_value(1))
         self.assertNotIn('a', scope)
 
     def test_apply_param(self):
@@ -58,8 +58,8 @@ class TestFunc(unittest.TestCase):
                 [
                     func.Return(exprs.Ref('a')),
                 ],
-            ).apply(scope, vals.Args([vals.Arg(builtins_.Int(value=1))])),
-            builtins_.Int(value=1))
+            ).apply(scope, vals.Args([vals.Arg(builtins_.Int.for_value(1))])),
+            builtins_.Int.for_value(1))
         self.assertNotIn('a', scope)
 
     def test_apply_fail(self):
@@ -70,8 +70,8 @@ class TestFunc(unittest.TestCase):
             ),
             (
                 func.Func('f', exprs.Params([exprs.Param('a')]), []),
-                vals.Args([vals.Arg(builtins_.Int(value=1)),
-                          vals.Arg(builtins_.Int(value=2))]),
+                vals.Args([vals.Arg(builtins_.Int.for_value(1)),
+                          vals.Arg(builtins_.Int.for_value(2))]),
             ),
         ]):
             with self.subTest(func=func_, args=args):

@@ -16,14 +16,29 @@ class Error(Exception):
 class BuiltinFunc(funcs.AbstractFunc):
     '''builtin func'''
 
-    func: Callable[[vals.Scope, vals.Args], vals.Val]
+    func: Callable[..., vals.Val]
 
     @property
     def params(self) -> exprs.Params:
-        raise NotImplementedError(inspect.getfullargspec(self.func))
+        spec = inspect.getfullargspec(self.func)
+        if spec.varargs or spec.varkw or spec.defaults or spec.kwonlyargs or spec.kwonlydefaults:
+            raise Error(f'invalid argspec {spec} for {self.func}')
+        for arg in spec.args:
+            if arg != 'self':
+                if arg not in spec.annotations or spec.annotations[arg] != vals.Val:
+                    raise Error(
+                        f'invalid annotation for arg {arg} in spec {spec} for func {self.func}')
+        return exprs.Params([exprs.Param(arg) for arg in spec.args])
 
     def apply(self, scope: vals.Scope, args: vals.Args) -> vals.Val:
-        return self.func(scope, args)
+        params = self.params
+        if len(params) != len(args):
+            raise Error(
+                f'param count mismatch: expected {len(params)} got {len(args)}')
+        return self.func(**{param.name: arg.value for param, arg in zip(self.params, args)})
+
+
+_BUILTIN_CLASS_FUNC_PREFIX = 'func_'
 
 
 @dataclass(frozen=True)
@@ -32,11 +47,14 @@ class BuiltinClass(vals.AbstractClass):
 
     __object_type: Type['vals.Object']
     _members: vals.Scope = field(init=False, default_factory=vals.Scope)
-    _name: Optional[str] = None
+    _name: Optional[str] = field(kw_only=True, default=None)
 
     def __post_init__(self):
-        # build members
-        pass
+        for name, val in self._object_type.__dict__.items():
+            if name.startswith(_BUILTIN_CLASS_FUNC_PREFIX):
+                func_name = name[len(_BUILTIN_CLASS_FUNC_PREFIX):]
+                func = funcs.BindableFunc(BuiltinFunc(val))
+                self._members[func_name] = func
 
     @property
     def name(self) -> str:
@@ -55,11 +73,24 @@ class BuiltinClass(vals.AbstractClass):
 class Int(vals.Object):
     '''int builtin'''
 
-    class_: vals.AbstractClass = field(
-        default_factory=lambda: IntClass, repr=False)
-    _members: vals.Scope = field(
-        default_factory=lambda: IntClass.members.as_child(), repr=False)  # pylint: disable=unnecessary-lambda
-    value: int = field(kw_only=True, default=0)
+    value: int
+
+    @staticmethod
+    def for_value(value: int) -> 'Int':
+        '''construct an Int object with the given value'''
+        int_ = Int(IntClass, IntClass.members.as_child(), value)
+        int_.bind_self()
+        return int_
+
+    @property
+    def members(self) -> vals.Scope:
+        return self._members
+
+    def func___add__(self, rhs: vals.Val) -> vals.Val:
+        '''add class method'''
+        if not isinstance(rhs, Int):
+            raise Error(f'invalid Int.__add__ rhs {rhs}')
+        return Int.for_value(self.value+rhs.value)
 
 
 IntClass = BuiltinClass(Int)
@@ -69,11 +100,6 @@ IntClass = BuiltinClass(Int)
 class NoneObject(vals.Object):
     '''None builtin'''
 
-    class_: vals.AbstractClass = field(
-        default_factory=lambda: NoneClass, repr=False)
-    _members: vals.Scope = field(
-        default_factory=lambda: NoneClass.members.as_child(), repr=False)  # pylint: disable=unnecessary-lambda
-
 
 NoneClass = BuiltinClass(NoneObject, _name='NoneClass')
-none = NoneObject()
+none = NoneObject(NoneClass, NoneClass.members.as_child())

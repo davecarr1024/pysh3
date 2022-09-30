@@ -1,7 +1,7 @@
 '''vals'''
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pype import vals, exprs
 
 
@@ -52,7 +52,8 @@ class BindableFunc(AbstractFunc):
 class BoundFunc(AbstractFunc):
     '''bound func'''
 
-    object_: vals.Val
+    # exclude from __eq__ since this points up the object tree
+    object_: vals.Val = field(compare=False, repr=False)
     func: BindableFunc
 
     def __post_init__(self):
