@@ -1,7 +1,7 @@
 '''builtins'''
 
-from abc import abstractmethod
 from dataclasses import dataclass, field
+from functools import cache
 import inspect
 from typing import Callable, Generic, Optional, Type, TypeVar
 
@@ -46,7 +46,7 @@ _BUILTIN_CLASS_FUNC_PREFIX = 'func_'
 class Class(vals.AbstractClass):
     '''builtin class'''
 
-    __object_type: Type['vals.Object']
+    __object_type: Type['_Object']
     _members: vals.Scope = field(init=False, default_factory=vals.Scope)
     _name: Optional[str] = field(kw_only=True, default=None)
 
@@ -69,10 +69,16 @@ class Class(vals.AbstractClass):
     def members(self) -> vals.Scope:
         return self._members
 
+    @staticmethod
+    @cache
+    def for_class(class_: Type['_Object']) -> 'Class':
+        '''get the builtin class for the given builtin'''
+        return Class(class_)
+
 
 @dataclass(frozen=True)
 class _Object(vals.Object):
-    '''object'''
+    '''generic builtin object'''
 
     # don't waste time deep comparing builtin objects
     class_: vals.AbstractClass = field(compare=False, repr=False)
@@ -91,15 +97,11 @@ class _ValueObject(_Object, Generic[_Value]):
         return str(self.value)
 
     @classmethod
-    @abstractmethod
-    def builtin_class(cls) -> Class:
-        '''the builtin class for this builtin'''
-
-    @classmethod
     def for_value(cls, value: _Value) -> '_ValueObject[_Value]':
         '''build an object for the given value'''
+        class_ = Class.for_class(cls)
         object_: '_ValueObject[_Value]' = cls(
-            cls.builtin_class(), cls.builtin_class().members.as_child(), value)
+            class_, class_.members.as_child(), value)
         object_.bind_self()
         return object_
 
@@ -107,10 +109,6 @@ class _ValueObject(_Object, Generic[_Value]):
 @dataclass(frozen=True)
 class Int(_ValueObject[int]):
     '''int builtin'''
-
-    @classmethod
-    def builtin_class(cls) -> Class:
-        return Class(Int)
 
     def func___add__(self, rhs: vals.Val) -> vals.Val:
         '''add class method'''
@@ -140,10 +138,6 @@ class Int(_ValueObject[int]):
 @dataclass(frozen=True)
 class Float(_ValueObject[float]):
     '''float builtin'''
-
-    @classmethod
-    def builtin_class(cls) -> Class:
-        return Class(Float)
 
     def func___add__(self, rhs: vals.Val) -> vals.Val:
         '''add class method'''
