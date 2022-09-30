@@ -3,7 +3,6 @@
 from dataclasses import dataclass
 from typing import Optional, Sequence
 
-from core import parser
 from pype import vals, exprs, builtins_, funcs
 
 
@@ -21,20 +20,17 @@ class Return(exprs.Expr):
             return exprs.Result(builtins_.none, is_return=True)
         return exprs.Result(self.value.eval(scope).value, is_return=True)
 
-    @classmethod
-    def load_result(cls, result: parser.Result) -> exprs.Expr:
-        raise NotImplementedError(result)
-
 
 @dataclass(frozen=True)
 class Func(funcs.AbstractFunc):
     '''func'''
 
+    name: str
+    _params: funcs.Params
     body: Sequence[exprs.Expr]
-    _params: Sequence[str]
 
     @property
-    def params(self) -> Sequence[str]:
+    def params(self) -> funcs.Params:
         return self._params
 
     def apply(self, scope: vals.Scope, args: Sequence[vals.Val]) -> vals.Val:
@@ -42,7 +38,7 @@ class Func(funcs.AbstractFunc):
         if len(self.params) != len(args):
             raise funcs.Error(
                 f'arg count mismatch for {self}: expected {len(self.params)} got {len(args)}')
-        func_scope = scope.as_child(**dict(zip(self.params, args)))
+        func_scope = self._params.bind(scope, args)
         for expr in self.body:
             result = expr.eval(func_scope)
             if result.is_return:

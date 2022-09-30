@@ -74,7 +74,7 @@ class Token:
     position: Position
 
     def __repr__(self) -> str:
-        return repr(self.value)
+        return f'{self.rule_name}({self.value})'
 
 
 class TokenStream(stream.Stream[Token]):
@@ -83,7 +83,7 @@ class TokenStream(stream.Stream[Token]):
     def __str__(self) -> str:
         if self.empty:
             return 'TokenStream()'
-        tail_str = ' '.join([token.value for token in self.items[:10]])
+        tail_str = str(self.items[:10])
         return f'TokenStream({repr(tail_str)}@{self.head.position})'
 
     @property

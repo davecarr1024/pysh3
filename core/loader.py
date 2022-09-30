@@ -268,7 +268,10 @@ def load_parser(grammar: str) -> parser.Parser:
             if lexer_val in lexer_rules and lexer_rules[lexer_val] != lexer_rule:
                 raise Error(
                     msg=f'mismatched lexer literal rule {lexer_val}={lexer_rule}')
+            old_lexer_rules = lexer_rules.copy()
+            lexer_rules.clear()
             lexer_rules[lexer_val] = lexer_rule
+            lexer_rules.update(old_lexer_rules)
             return parser.Ref(lexer_val)
 
         load_rule = factory({

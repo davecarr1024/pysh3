@@ -9,6 +9,7 @@
     "python.testing.pytestEnabled": false,
     "python.testing.unittestEnabled": true,
     "python.linting.pylintEnabled": false,
-    "python.analysis.inlayHints.functionReturnTypes": true,
-    "python.analysis.inlayHints.variableTypes": true
+    "python.testing.pytestArgs": [
+        "."
+    ],
 }

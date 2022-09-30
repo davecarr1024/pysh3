@@ -4,6 +4,13 @@ from typing import Sequence, Tuple
 import unittest
 from pype import func, funcs, vals, exprs, builtins_
 
+if 'unittest.util' in __import__('sys').modules:
+    # Show full diff in self.assertEqual.
+    # pylint: disable=protected-access
+    __import__(
+        'sys').modules['unittest.util']._MAX_LENGTH = 999999999
+    # pylint: enable=protected-access
+
 
 class TestReturn(unittest.TestCase):
     def test_eval(self):
@@ -29,6 +36,8 @@ class TestFunc(unittest.TestCase):
         scope = vals.Scope.default()
         self.assertEqual(
             func.Func(
+                'f',
+                funcs.Params([]),
                 [
                     exprs.Assignment('a', exprs.Literal(
                         builtins_.Int(value=1))),
@@ -36,7 +45,6 @@ class TestFunc(unittest.TestCase):
                     exprs.Assignment('a', exprs.Literal(
                         builtins_.Int(value=2))),
                 ],
-                []
             ).apply(scope, []),
             builtins_.Int(value=1))
         self.assertNotIn('a', scope)
@@ -45,10 +53,11 @@ class TestFunc(unittest.TestCase):
         scope = vals.Scope.default()
         self.assertEqual(
             func.Func(
+                'f',
+                funcs.Params([funcs.Param('a')]),
                 [
                     func.Return(exprs.Ref('a')),
                 ],
-                ['a']
             ).apply(scope, [builtins_.Int(value=1)]),
             builtins_.Int(value=1))
         self.assertNotIn('a', scope)
@@ -56,11 +65,11 @@ class TestFunc(unittest.TestCase):
     def test_apply_fail(self):
         for func_, args in list[Tuple[func.Func, Sequence[vals.Val]]]([
             (
-                func.Func([], ['a']),
+                func.Func('f', funcs.Params([funcs.Param('a')]), []),
                 [],
             ),
             (
-                func.Func([], ['a']),
+                func.Func('f', funcs.Params([funcs.Param('a')]), []),
                 [builtins_.Int(value=1), builtins_.Int(value=2)],
             ),
         ]):
