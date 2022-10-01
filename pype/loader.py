@@ -58,13 +58,6 @@ def load(input_str: str) -> exprs.Namespace:
                     result.where_one(parser.Result.rule_name_is('return_value'))))
         return func.Return(None)
 
-    def load_call(result: parser.Result) -> exprs.Expr:
-        object_ = load_expr(result.where_one(
-            parser.Result.rule_name_is('call_object')))
-        args = load_args(result.where_one(
-            parser.Result.rule_name_is('call_args')))
-        return exprs.Call(object_, args)
-
     def load_binary_operation(result: parser.Result) -> exprs.Expr:
         methods: Mapping[str, str] = {
             '+': '__add__',
@@ -75,12 +68,34 @@ def load(input_str: str) -> exprs.Namespace:
         lhs, rhs = (load_expr(operand) for operand in result['operand', 2])
         operator = loader.get_token_value(result['binary_operator', 1])
         method = methods[operator]
-        return exprs.Call(exprs.Member(lhs, method), exprs.Args([exprs.Arg(rhs)]))
+        return exprs.Path(
+            lhs,
+            [
+                exprs.Path.Member(method),
+                exprs.Path.Call(exprs.Args([exprs.Arg(rhs)])),
+            ]
+        )
 
     def load_class_decl(result: parser.Result) -> exprs.Expr:
         name = loader.get_token_value(result['class_name', 1])
         body = [load_expr(expr) for expr in result['class_body', 1]['expr']]
         return exprs.Assignment(name, exprs.Class(name, body))
+
+    def load_path(result: parser.Result) -> exprs.Expr:
+        def load_path_part_member(result: parser.Result) -> exprs.Path.Part:
+            return exprs.Path.Member(loader.get_token_value(result['path_part_member_name', 1]))
+
+        def load_path_part_call(result: parser.Result) -> exprs.Path.Part:
+            return exprs.Path.Call(load_args(result))
+
+        load_path_part = loader.factory({
+            'path_part_member': load_path_part_member,
+            'path_part_call': load_path_part_call,
+        })
+
+        root = load_expr(result['path_root', 1])
+        parts = [load_path_part(part) for part in result['path_part']]
+        return exprs.Path(root, parts)
 
     load_expr = loader.factory({
         'ref': load_ref,
@@ -88,9 +103,9 @@ def load(input_str: str) -> exprs.Namespace:
         'literal': load_literal,
         'func_decl': load_func_decl,
         'return_statement': load_return_statement,
-        'call': load_call,
         'binary_operation': load_binary_operation,
         'class_decl': load_class_decl,
+        'path': load_path,
     })
 
     return load_namespace(loader.load_parser(r'''
@@ -101,7 +116,13 @@ def load(input_str: str) -> exprs.Namespace:
         root => statement+;
         statement => class_decl | func_decl | ((return_statement | assignment | expr) ";");
         expr => binary_operation | operand;
-        operand => call | ref | literal;
+        operand => path | ref | literal;
+        path => path_root path_part+;
+        path_root => ref | literal;
+        path_part => path_part_member | path_part_call;
+        path_part_member => "." path_part_member_name;
+        path_part_member_name => id;
+        path_part_call => "(" (expr ("," expr)*)? ")";
         ref => id;
         assignment => assignment_name "=" assignment_value;
         assignment_name => id;
@@ -116,10 +137,6 @@ def load(input_str: str) -> exprs.Namespace:
         param => id;
         return_statement => "return" return_value?;
         return_value => expr;
-        call => call_object call_args;
-        call_object => ref;
-        call_args => args;
-        args => "(" (expr ("," expr)*)? ")";
         binary_operation => operand binary_operator operand;
         binary_operator => "+" | "-" | "*" | "/";
         class_decl => "class" class_name "{" class_body "}";

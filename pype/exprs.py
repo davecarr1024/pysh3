@@ -111,23 +111,6 @@ class Ref(Expr):
 
 
 @dataclass(frozen=True)
-class Member(Expr):
-    '''get a member of an object'''
-
-    object_: Expr
-    name: str
-
-    def __str__(self) -> str:
-        return f'{self.object_}.{self.name}'
-
-    def eval(self, scope: vals.Scope) -> Result:
-        object_ = self.object_.eval(scope).value
-        if self.name not in object_:
-            raise Error(f'unknown member {self.name} in object {object_}')
-        return Result(object_[self.name])
-
-
-@dataclass(frozen=True)
 class Literal(Expr):
     '''literal'''
 
@@ -170,14 +153,44 @@ class Namespace(Expr):
 
 
 @dataclass(frozen=True)
-class Call(Expr):
-    '''call'''
+class Path(Expr):
+    '''multipart path down object tree'''
 
-    object_: Expr
-    args: Args
+    class Part(ABC):
+        '''part of a path'''
+
+        @abstractmethod
+        def eval(self, scope: vals.Scope, object_: vals.Val) -> vals.Val:
+            '''evaluate this part of the path'''
+
+    @dataclass(frozen=True)
+    class Member(Part):
+        '''gets a member of an object'''
+
+        name: str
+
+        def eval(self, scope: vals.Scope, object_: vals.Val) -> vals.Val:
+            if not self.name in object_:
+                raise Error(f'unknown member {self.name} in object {object_}')
+            return object_[self.name]
+
+    @dataclass(frozen=True)
+    class Call(Part):
+        '''calls an object with args'''
+
+        args: Args
+
+        def eval(self, scope: vals.Scope, object_: vals.Val) -> vals.Val:
+            return object_.apply(scope, self.args.eval(scope))
+
+    root: Expr
+    parts: Sequence[Part]
 
     def eval(self, scope: vals.Scope) -> Result:
-        return Result(self.object_.eval(scope).value.apply(scope, self.args.eval(scope)))
+        val = self.root.eval(scope).value
+        for part in self.parts:
+            val = part.eval(scope, val)
+        return Result(val)
 
 
 @dataclass(frozen=True)

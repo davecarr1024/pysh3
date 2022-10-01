@@ -141,14 +141,16 @@ class TestCall(unittest.TestCase):
                 ),
                 exprs.Assignment(
                     'c',
-                    exprs.Call(
+                    exprs.Path(
                         exprs.Ref('f'),
-                        exprs.Args([
-                            exprs.Arg(exprs.Literal(
-                                builtins_.Int.for_value(1))),
-                            exprs.Arg(exprs.Literal(
-                                builtins_.Int.for_value(2))),
-                        ])
+                        [
+                            exprs.Path.Call(exprs.Args([
+                                exprs.Arg(exprs.Literal(
+                                    builtins_.Int.for_value(1))),
+                                exprs.Arg(exprs.Literal(
+                                    builtins_.Int.for_value(2))),
+                            ])),
+                        ]
                     )
                 )
             ]).eval(vals.Scope()).value.members['c'],
