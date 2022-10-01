@@ -159,14 +159,15 @@ class TestCall(unittest.TestCase):
 
 class TestClass(unittest.TestCase):
     def test_eval(self):
+        c = exprs.Class(
+            'c',
+            [
+                exprs.Assignment('a', exprs.Literal(
+                    builtins_.Int.for_value(1))),
+            ]
+        ).eval(vals.Scope()).value
         self.assertEqual(
-            exprs.Class(
-                'c',
-                [
-                    exprs.Assignment('a', exprs.Literal(
-                        builtins_.Int.for_value(1))),
-                ]
-            ).eval(vals.Scope()).value,
+            c,
             vals.Class(
                 'c',
                 vals.Scope(
@@ -177,3 +178,5 @@ class TestClass(unittest.TestCase):
                 )
             )
         )
+        self.assertIn('a', c)
+        self.assertEqual(c['a'], builtins_.Int.for_value(1))

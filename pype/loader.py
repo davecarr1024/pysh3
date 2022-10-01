@@ -78,7 +78,8 @@ def load(input_str: str) -> exprs.Namespace:
 
     def load_class_decl(result: parser.Result) -> exprs.Expr:
         name = loader.get_token_value(result['class_name', 1])
-        body = [load_expr(expr) for expr in result['class_body', 1]['expr']]
+        body = [load_expr(expr)
+                for expr in result['class_body', 1]['statement']]
         return exprs.Assignment(name, exprs.Class(name, body))
 
     def load_path(result: parser.Result) -> exprs.Expr:
@@ -114,7 +115,8 @@ def load(input_str: str) -> exprs.Namespace:
         int = "[1-9][0-9]*";
 
         root => statement+;
-        statement => class_decl | func_decl | ((return_statement | assignment | expr) ";");
+        statement => class_decl | func_decl | line;
+        line =>  (return_statement | assignment | expr) ";";
         expr => binary_operation | operand;
         operand => path | ref | literal;
         path => path_root path_part+;
@@ -152,3 +154,12 @@ def eval_(input_str: str, scope: Optional[vals.Scope] = None) -> vals.Val:
         expr.eval(scope)
         for expr in load(input_str).body
     ][-1].value
+
+
+if __name__ == '__main__':
+    scope = vals.Scope.default()
+    while True:
+        try:
+            print(eval_(input('>'), scope))
+        except Exception as error:
+            print(f'error {error}')
