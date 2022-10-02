@@ -184,6 +184,14 @@ class TestLoader(unittest.TestCase):
                     ),
                 ])
             ),
+            (
+                r"'a';",
+                statements.Block([
+                    statements.ExprStatement(
+                        exprs.Literal(builtins_.Str.for_value('a'))
+                    ),
+                ])
+            ),
         ]):
             with self.subTest(input_str=input_str, expected_block=expected_block):
                 actual_block = loader.load(input_str)

@@ -159,6 +159,11 @@ class Float(_ValueObject[float]):
         return Float.for_value(self.value/rhs.value)
 
 
+@dataclass(frozen=True)
+class Str(_ValueObject[str]):
+    '''str builtin'''
+
+
 @ dataclass(frozen=True)
 class NoneObject(_Object):
     '''None builtin'''
