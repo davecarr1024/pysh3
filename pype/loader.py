@@ -133,7 +133,8 @@ def load(input_str: str) -> statements.Block:
 
 def eval_(input_str: str, scope: Optional[vals.Scope] = None) -> vals.Val:
     '''eval a set of statements and return the value of the last one'''
-    scope = scope or vals.Scope.default()
+    if scope is None:
+        scope = vals.Scope.default()
     statements_ = list(load(input_str))
     for statement in statements_[:-1]:
         statement.eval(scope)
@@ -143,10 +144,12 @@ def eval_(input_str: str, scope: Optional[vals.Scope] = None) -> vals.Val:
     return builtins_.none
 
 
-# if __name__ == '__main__':
-#     scope = vals.Scope.default()
-#     while True:
-#         try:
-#             print(eval_(input('>'), scope))
-#         except Exception as error:
-#             print(f'error {error}')
+if __name__ == '__main__':
+    scope = vals.Scope.default()
+    while True:
+        try:
+            result = eval_(input('>'), scope)
+            if result != builtins_.none:
+                print(result)
+        except Exception as error:
+            print(f'error: {error}')
