@@ -177,7 +177,7 @@ class TestLoader(unittest.TestCase):
                 ])
             ),
             (
-                '3.14',
+                '3.14;',
                 statements.Block([
                     statements.ExprStatement(
                         exprs.Literal(builtins_.Float.for_value(3.14))
