@@ -2,7 +2,7 @@
 
 from typing import Tuple
 import unittest
-from pype import builtins_, exprs, func, loader, params, statements
+from pype import builtins_, exprs, func, loader, params, statements, vals
 
 if 'unittest.util' in __import__('sys').modules:
     # Show full diff in self.assertEqual.
@@ -182,33 +182,33 @@ class TestLoader(unittest.TestCase):
                 self.assertEqual(actual_block, expected_block,
                                  f'actual {actual_block} != expected {expected_block}')
 
-#     def test_eval(self):
-#         for input_str, expected_result in list[Tuple[str, vals.Val]]([
-#             ('1;', builtins_.Int.for_value(1)),
-#             ('a = 1; a;', builtins_.Int.for_value(1)),
-#             (
-#                 r'''
-#                 def f(a) { return a; }
-#                 f(1);
-#                 ''',
-#                 builtins_.Int.for_value(1)
-#             ),
-#             ('1 + 2;', builtins_.Int.for_value(3)),
-#             ('1 - 2;', builtins_.Int.for_value(-1)),
-#             ('1 * 2;', builtins_.Int.for_value(2)),
-#             ('1 / 2;', builtins_.Float.for_value(0.5)),
-#             (
-#                 'def f(a,b) { return a + b; } f(1,2);',
-#                 builtins_.Int.for_value(3)
-#             ),
-#             (
-#                 'class c { a = 1; } c.a;',
-#                 builtins_.Int.for_value(1)
-#             ),
-#             (
-#                 'class c { a = 1; } c().a;',
-#                 builtins_.Int.for_value(1)
-#             ),
-#         ]):
-#             with self.subTest(input_str=input_str, expected_result=expected_result):
-#                 self.assertEqual(loader.eval_(input_str), expected_result)
+    def test_eval(self):
+        for input_str, expected_result in list[Tuple[str, vals.Val]]([
+            ('1;', builtins_.Int.for_value(1)),
+            ('a = 1; a;', builtins_.Int.for_value(1)),
+            (
+                r'''
+                def f(a) { return a; }
+                f(1);
+                ''',
+                builtins_.Int.for_value(1)
+            ),
+            ('1 + 2;', builtins_.Int.for_value(3)),
+            ('1 - 2;', builtins_.Int.for_value(-1)),
+            ('1 * 2;', builtins_.Int.for_value(2)),
+            ('1 / 2;', builtins_.Float.for_value(0.5)),
+            (
+                'def f(a,b) { return a + b; } f(1,2);',
+                builtins_.Int.for_value(3)
+            ),
+            (
+                'class c { a = 1; } c.a;',
+                builtins_.Int.for_value(1)
+            ),
+            (
+                'class c { a = 1; } c().a;',
+                builtins_.Int.for_value(1)
+            ),
+        ]):
+            with self.subTest(input_str=input_str, expected_result=expected_result):
+                self.assertEqual(loader.eval_(input_str), expected_result)

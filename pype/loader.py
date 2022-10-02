@@ -1,5 +1,6 @@
 '''loader'''
 
+from typing import Optional
 from core import loader, parser
 from pype import builtins_, exprs, func, params, statements, vals
 
@@ -130,13 +131,16 @@ def load(input_str: str) -> statements.Block:
     ''').apply(input_str))
 
 
-# def eval_(input_str: str, scope: Optional[vals.Scope] = None) -> vals.Val:
-#     '''eval a set of statements and return the value of the last one'''
-#     scope = scope or vals.Scope.default()
-#     return [
-#         statement.eval(scope)
-#         for statement in load(input_str)
-#     ][-1].value
+def eval_(input_str: str, scope: Optional[vals.Scope] = None) -> vals.Val:
+    '''eval a set of statements and return the value of the last one'''
+    scope = scope or vals.Scope.default()
+    statements_ = list(load(input_str))
+    for statement in statements_[:-1]:
+        statement.eval(scope)
+    if isinstance(statements_[-1], statements.ExprStatement):
+        return statements_[-1].value.eval(scope)
+    statements_[-1].eval(scope)
+    return builtins_.none
 
 
 # if __name__ == '__main__':
