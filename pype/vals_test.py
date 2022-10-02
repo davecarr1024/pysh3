@@ -18,17 +18,17 @@ class ArgsTest(unittest.TestCase):
 
 class ScopeTest(unittest.TestCase):
     def test_contains(self):
-        self.assertIn('a', vals.Scope(None, {'a': vals.Val()}))
-        self.assertNotIn('a', vals.Scope(None, {}))
+        self.assertIn('a', vals.Scope({'a': vals.Val()}))
+        self.assertNotIn('a', vals.Scope({}))
 
     def test_get_item(self):
         self.assertEqual(
-            vals.Scope(None, {'a': builtins_.Int.for_value(1)})['a'],
+            vals.Scope({'a': builtins_.Int.for_value(1)})['a'],
             builtins_.Int.for_value(1)
         )
 
     def test_set_item(self):
-        scope = vals.Scope(None, {})
+        scope = vals.Scope({})
         self.assertNotIn('a', scope)
         scope['a'] = builtins_.Int.for_value(1)
         self.assertIn('a', scope)
@@ -37,15 +37,14 @@ class ScopeTest(unittest.TestCase):
     def test_vals(self):
         self.assertDictEqual(
             vals.Scope(
-                vals.Scope(
-                    None,
+                {
+                    'b': builtins_.Int.for_value(2),
+                },
+                parent=vals.Scope(
                     {
                         'a': builtins_.Int.for_value(1),
                     }
-                ),
-                {
-                    'b': builtins_.Int.for_value(2),
-                }
+                )
             ).vals,
             {
                 'b': builtins_.Int.for_value(2),
@@ -55,15 +54,14 @@ class ScopeTest(unittest.TestCase):
     def test_all_vals(self):
         self.assertDictEqual(
             vals.Scope(
-                vals.Scope(
-                    None,
+                {
+                    'b': builtins_.Int.for_value(2),
+                },
+                parent=vals.Scope(
                     {
                         'a': builtins_.Int.for_value(1),
                     }
-                ),
-                {
-                    'b': builtins_.Int.for_value(2),
-                }
+                )
             ).all_vals,
             {
                 'a': builtins_.Int.for_value(1),
@@ -72,8 +70,19 @@ class ScopeTest(unittest.TestCase):
         )
 
     def test_as_child(self):
-        self.assertEqual(
-            vals.Scope(None, {'a': builtins_.Int.for_value(1)}).as_child(),
-            vals.Scope(vals.Scope(
-                None, {'a': builtins_.Int.for_value(1)}))
+        scope = vals.Scope({'a': builtins_.Int.for_value(1)})
+        self.assertIs(scope.as_child().parent, scope)
+
+
+class NamespaceTest(unittest.TestCase):
+    def test_members(self):
+        self.assertDictEqual(
+            dict(vals.Namespace(vals.Scope({
+                'a': builtins_.Int.for_value(1),
+                'b': builtins_.Int.for_value(2),
+            })).members),
+            {
+                'a': builtins_.Int.for_value(1),
+                'b': builtins_.Int.for_value(2),
+            }
         )

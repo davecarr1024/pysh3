@@ -14,9 +14,7 @@ from typing import (
     Type,
 )
 
-
-class Error(Exception):
-    '''vals error'''
+from pype import errors
 
 
 @dataclass(frozen=True)
@@ -48,7 +46,7 @@ class Val(ABC, Mapping[str, 'Val']):
 
     def apply(self, scope: 'Scope', args: Args) -> 'Val':
         '''apply'''
-        raise Error(f'applying uncallable val {self}')
+        raise errors.Error(f'applying uncallable val {self}')
 
     @property
     def members(self) -> 'Scope':
@@ -62,7 +60,7 @@ class Val(ABC, Mapping[str, 'Val']):
 
     def bind(self, object_: 'Val') -> 'Val':
         '''bind'''
-        raise Error(f'binding unbindable val {self}')
+        raise errors.Error(f'binding unbindable val {self}')
 
     def __contains__(self, name: object) -> bool:
         return name in self.members
@@ -75,7 +73,7 @@ class Val(ABC, Mapping[str, 'Val']):
 
     def __getitem__(self, name: str) -> 'Val':
         if name not in self.members:
-            raise Error(f'unknown member {name} in {self}')
+            raise errors.Error(f'unknown member {name} in {self}')
         return self.members[name]
 
 
@@ -83,7 +81,8 @@ class Val(ABC, Mapping[str, 'Val']):
 class Scope(MutableMapping[str, Val]):
     '''scope'''
 
-    parent: Optional['Scope'] = None
+    parent: Optional['Scope'] = field(
+        default=None, compare=False, kw_only=True)
     _vals: MutableMapping[str, Val] = field(
         default_factory=dict[str, Val])
 
@@ -94,6 +93,9 @@ class Scope(MutableMapping[str, Val]):
             scope = scope.parent
             assert all(scope is not descendent for descendent in descendents)
             descendents.append(scope)
+
+    def __repr__(self) -> str:
+        return repr(self._vals)
 
     def __iter__(self) -> Iterator[str]:
         return iter(self._vals)
@@ -108,7 +110,7 @@ class Scope(MutableMapping[str, Val]):
             return self._vals[name]
         if self.parent is not None:
             return self.parent[name]
-        raise Error(f'unknown var {name}')
+        raise errors.Error(f'unknown var {name}')
 
     def __setitem__(self, name: str, val: Val) -> None:
         self._vals[name] = val
@@ -135,7 +137,7 @@ class Scope(MutableMapping[str, Val]):
 
     def as_child(self, **vals: Val) -> 'Scope':
         '''nest this scope inside a new scope'''
-        return Scope(self, vals)
+        return Scope(vals, parent=self)
 
     def bind_vals(self, object_: Val) -> 'Mapping[str,Val]':
         '''get all this scope's vals bound to object_'''
@@ -147,7 +149,7 @@ class Scope(MutableMapping[str, Val]):
 
     def bind(self, object_: Val) -> 'Scope':
         '''return a new child scope with all bindable vals in this scope bound to object_'''
-        return Scope(self, dict[str, Val](self.bind_vals(object_)))
+        return Scope(dict[str, Val](self.bind_vals(object_)), parent=self)
 
     def bind_self(self, object_: Val) -> None:
         '''bind this scope to the given object'''
@@ -163,6 +165,7 @@ class Scope(MutableMapping[str, Val]):
 class Namespace(Val):
     '''namespace'''
 
+    name: Optional[str] = field(kw_only=True, default=None)
     _members: Scope
 
     @property
@@ -232,5 +235,5 @@ class Object(Val, ABC):
 
     def apply(self, scope: Scope, args: Args) -> Val:
         if '__call__' not in self:
-            raise Error(f'object {self} not callable')
+            raise errors.Error(f'object {self} not callable')
         return self['__call__'].apply(scope, args)

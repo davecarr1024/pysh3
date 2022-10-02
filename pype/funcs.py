@@ -2,11 +2,7 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from pype import vals, exprs
-
-
-class Error(Exception):
-    '''funcs error'''
+from pype import errors, params, vals
 
 
 class AbstractFunc(vals.Val, ABC):
@@ -14,7 +10,7 @@ class AbstractFunc(vals.Val, ABC):
 
     @property
     @abstractmethod
-    def params(self) -> exprs.Params:
+    def params(self) -> params.Params:
         '''params'''
 
     @abstractmethod
@@ -30,11 +26,11 @@ class BindableFunc(AbstractFunc):
 
     def __post_init__(self):
         if len(self.func.params) == 0:
-            raise Error(
+            raise errors.Error(
                 f'unable to create bindable func from func {self.func} with 0 params')
 
     @property
-    def params(self) -> exprs.Params:
+    def params(self) -> params.Params:
         return self.func.params
 
     def apply(self, scope: vals.Scope, args: vals.Args) -> vals.Val:
@@ -58,10 +54,11 @@ class BoundFunc(AbstractFunc):
 
     def __post_init__(self):
         if len(self.func.params) == 0:
-            raise Error(f'unable to bind func {self.func} with 0 params')
+            raise errors.Error(
+                f'unable to bind func {self.func} with 0 params')
 
     @property
-    def params(self) -> exprs.Params:
+    def params(self) -> params.Params:
         return self.func.params.tail
 
     def apply(self, scope: vals.Scope, args: vals.Args) -> vals.Val:

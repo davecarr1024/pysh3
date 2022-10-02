@@ -2,7 +2,7 @@
 
 from typing import Callable, Tuple
 import unittest
-from pype import builtins_, exprs, funcs, vals
+from pype import builtins_, errors, funcs, params, vals
 
 if 'unittest.util' in __import__('sys').modules:
     # Show full diff in self.assertEqual.
@@ -20,13 +20,13 @@ class BuiltinFuncTest(unittest.TestCase):
         def f_2() -> vals.Val:
             ...
 
-        for func, expected_params in list[Tuple[Callable[..., vals.Val], exprs.Params]]([
+        for func, expected_params in list[Tuple[Callable[..., vals.Val], params.Params]]([
             (
                 f_1,
-                exprs.Params([exprs.Param('unused_a'),
-                             exprs.Param('unused_b')])
+                params.Params([params.Param('unused_a'),
+                               params.Param('unused_b')])
             ),
-            (f_2, exprs.Params([])),
+            (f_2, params.Params([])),
         ]):
             with self.subTest(func=func, expected_params=expected_params):
                 self.assertEqual(
@@ -50,7 +50,7 @@ class BuiltinFuncTest(unittest.TestCase):
             default_arg,
         ]):
             with self.subTest(func=func):
-                with self.assertRaises(builtins_.Error):
+                with self.assertRaises(errors.Error):
                     _ = builtins_.Func(func).params
 
     def test_apply(self):
@@ -104,7 +104,7 @@ class IntTest(unittest.TestCase):
         assert isinstance(add_func, funcs.AbstractFunc)
         self.assertEqual(
             add_func.params,
-            exprs.Params([exprs.Param('rhs')])
+            params.Params([params.Param('rhs')])
         )
         self.assertEqual(
             builtins_.Int.for_value(1)['__add__'].apply(

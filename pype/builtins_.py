@@ -5,12 +5,7 @@ from functools import cache
 import inspect
 from typing import Callable, Generic, Optional, Type, TypeVar
 
-from pype import exprs
-from . import vals, funcs
-
-
-class Error(Exception):
-    '''builtins error'''
+from pype import errors, funcs, params, vals
 
 
 @dataclass(frozen=True)
@@ -20,21 +15,21 @@ class Func(funcs.AbstractFunc):
     func: Callable[..., vals.Val]
 
     @property
-    def params(self) -> exprs.Params:
+    def params(self) -> params.Params:
         spec = inspect.getfullargspec(self.func)
         if spec.varargs or spec.varkw or spec.defaults or spec.kwonlyargs or spec.kwonlydefaults:
-            raise Error(f'invalid argspec {spec} for {self.func}')
+            raise errors.Error(f'invalid argspec {spec} for {self.func}')
         for arg in spec.args:
             if arg != 'self':
                 if arg not in spec.annotations or spec.annotations[arg] != vals.Val:
-                    raise Error(
+                    raise errors.Error(
                         f'invalid annotation for arg {arg} in spec {spec} for func {self.func}')
-        return exprs.Params([exprs.Param(arg) for arg in spec.args])
+        return params.Params([params.Param(arg) for arg in spec.args])
 
     def apply(self, scope: vals.Scope, args: vals.Args) -> vals.Val:
         params = self.params
         if len(params) != len(args):
-            raise Error(
+            raise errors.Error(
                 f'param count mismatch: expected {len(params)} got {len(args)}')
         return self.func(**{param.name: arg.value for param, arg in zip(self.params, args)})
 
@@ -113,25 +108,25 @@ class Int(_ValueObject[int]):
     def func___add__(self, rhs: vals.Val) -> vals.Val:
         '''add class method'''
         if not isinstance(rhs, Int):
-            raise Error(f'invalid Int.__add__ rhs {rhs}')
+            raise errors.Error(f'invalid Int.__add__ rhs {rhs}')
         return Int.for_value(self.value+rhs.value)
 
     def func___sub__(self, rhs: vals.Val) -> vals.Val:
         '''sub class method'''
         if not isinstance(rhs, Int):
-            raise Error(f'invalid Int.__sub__ rhs {rhs}')
+            raise errors.Error(f'invalid Int.__sub__ rhs {rhs}')
         return Int.for_value(self.value-rhs.value)
 
     def func___mul__(self, rhs: vals.Val) -> vals.Val:
         '''mul class method'''
         if not isinstance(rhs, Int):
-            raise Error(f'invalid Int.__mul__ rhs {rhs}')
+            raise errors.Error(f'invalid Int.__mul__ rhs {rhs}')
         return Int.for_value(self.value*rhs.value)
 
     def func___div__(self, rhs: vals.Val) -> vals.Val:
         '''div class method'''
         if not isinstance(rhs, Int):
-            raise Error(f'invalid Int.__div__ rhs {rhs}')
+            raise errors.Error(f'invalid Int.__div__ rhs {rhs}')
         return Float.for_value(self.value/rhs.value)
 
 
@@ -142,25 +137,25 @@ class Float(_ValueObject[float]):
     def func___add__(self, rhs: vals.Val) -> vals.Val:
         '''add class method'''
         if not isinstance(rhs, Float):
-            raise Error(f'invalid Float.__add__ rhs {rhs}')
+            raise errors.Error(f'invalid Float.__add__ rhs {rhs}')
         return Float.for_value(self.value+rhs.value)
 
     def func___sub__(self, rhs: vals.Val) -> vals.Val:
         '''sub class method'''
         if not isinstance(rhs, Float):
-            raise Error(f'invalid Float.__sub__ rhs {rhs}')
+            raise errors.Error(f'invalid Float.__sub__ rhs {rhs}')
         return Float.for_value(self.value-rhs.value)
 
     def func___mul__(self, rhs: vals.Val) -> vals.Val:
         '''mul class method'''
         if not isinstance(rhs, Float):
-            raise Error(f'invalid Float.__mul__ rhs {rhs}')
+            raise errors.Error(f'invalid Float.__mul__ rhs {rhs}')
         return Float.for_value(self.value*rhs.value)
 
     def func___div__(self, rhs: vals.Val) -> vals.Val:
         '''div class method'''
         if not isinstance(rhs, Float):
-            raise Error(f'invalid Float.__div__ rhs {rhs}')
+            raise errors.Error(f'invalid Float.__div__ rhs {rhs}')
         return Float.for_value(self.value/rhs.value)
 
 

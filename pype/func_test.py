@@ -2,78 +2,89 @@
 
 from typing import Tuple
 import unittest
-from pype import func, funcs, vals, exprs, builtins_
-
-if 'unittest.util' in __import__('sys').modules:
-    # Show full diff in self.assertEqual.
-    # pylint: disable=protected-access
-    __import__(
-        'sys').modules['unittest.util']._MAX_LENGTH = 999999999
-    # pylint: enable=protected-access
+from pype import errors, exprs, func, statements, vals, builtins_, params
 
 
-class TestReturn(unittest.TestCase):
-    def test_eval(self):
-        for return_, expected_result in list[Tuple[func.Return, exprs.Result]]([
+class FuncTest(unittest.TestCase):
+    def test_apply(self):
+        for func_, args, expected_result in list[Tuple[func.Func, vals.Args, vals.Val]]([
             (
-                func.Return(exprs.Literal(builtins_.Int.for_value(1))),
-                exprs.Result(builtins_.Int.for_value(1), is_return=True)
+                func.Func('f', params.Params([]), statements.Block([])),
+                vals.Args([]),
+                builtins_.none,
             ),
             (
-                func.Return(None),
-                exprs.Result(builtins_.none, is_return=True)
+                func.Func(
+                    'f',
+                    params.Params([]),
+                    statements.Block([
+                        statements.Assignment(
+                            'a',
+                            exprs.Literal(builtins_.Int.for_value(1)),
+                        ),
+                    ]),
+                ),
+                vals.Args([]),
+                builtins_.none,
+            ),
+            (
+                func.Func(
+                    'f',
+                    params.Params([]),
+                    statements.Block([
+                        statements.Return(
+                            exprs.Literal(builtins_.Int.for_value(1))
+                        ),
+                    ]),
+                ),
+                vals.Args([]),
+                builtins_.Int.for_value(1),
+            ),
+            (
+                func.Func(
+                    'f',
+                    params.Params([
+                        params.Param('a'),
+                    ]),
+                    statements.Block([
+                        statements.Return(
+                            exprs.Ref('a'),
+                        ),
+                    ]),
+                ),
+                vals.Args([
+                    vals.Arg(builtins_.Int.for_value(1)),
+                ]),
+                builtins_.Int.for_value(1),
             ),
         ]):
-            with self.subTest(return_=return_, expected_result=expected_result):
-                self.assertEqual(
-                    return_.eval(vals.Scope()),
-                    expected_result
-                )
-
-
-class TestFunc(unittest.TestCase):
-    def test_apply(self):
-        scope = vals.Scope.default()
-        self.assertEqual(
-            func.Func(
-                'f',
-                exprs.Params([]),
-                [
-                    exprs.Assignment('a', exprs.Literal(
-                        builtins_.Int.for_value(1))),
-                    func.Return(exprs.Ref('a')),
-                    exprs.Assignment('a', exprs.Literal(
-                        builtins_.Int.for_value(2))),
-                ],
-            ).apply(scope, vals.Args([])),
-            builtins_.Int.for_value(1))
-        self.assertNotIn('a', scope)
-
-    def test_apply_param(self):
-        scope = vals.Scope.default()
-        self.assertEqual(
-            func.Func(
-                'f',
-                exprs.Params([exprs.Param('a')]),
-                [
-                    func.Return(exprs.Ref('a')),
-                ],
-            ).apply(scope, vals.Args([vals.Arg(builtins_.Int.for_value(1))])),
-            builtins_.Int.for_value(1))
-        self.assertNotIn('a', scope)
+            with self.subTest(func_=func_, args=args, expected_result=expected_result):
+                actual_result = func_.apply(vals.Scope(), args)
+                self.assertEqual(expected_result, actual_result)
 
     def test_apply_fail(self):
         for func_, args in list[Tuple[func.Func, vals.Args]]([
             (
-                func.Func('f', exprs.Params([exprs.Param('a')]), []),
-                vals.Args([]),
+                func.Func(
+                    'f',
+                    params.Params([]),
+                    statements.Block([]),
+                ),
+                vals.Args([
+                    vals.Arg(builtins_.Int.for_value(1)),
+                ])
             ),
             (
-                func.Func('f', exprs.Params([exprs.Param('a')]), []),
-                vals.Args([vals.Arg(builtins_.Int.for_value(1)),
-                          vals.Arg(builtins_.Int.for_value(2))]),
+                func.Func(
+                    'f',
+                    params.Params([
+                        params.Param('a'),
+                    ]),
+                    statements.Block([]),
+                ),
+                vals.Args([])
             ),
         ]):
-            with self.subTest(func=func_, args=args):
-                with self.assertRaises(funcs.Error):
-                    func_.apply(vals.Scope.default(), args)
+            with self.subTest(func_=func_, args=args):
+                with self.assertRaises(errors.Error):
+                    func_.apply(vals.Scope(), args)
