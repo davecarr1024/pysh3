@@ -128,129 +128,54 @@ class TestLoader(unittest.TestCase):
                     ),
                 ])
             ),
-            #             (
-            #                 'a = b;',
-            #                 exprs.Namespace([exprs.Assignment('a', exprs.Ref('b'))]),
-            #             ),
-            #             (
-            #                 'a = 1;',
-            #                 exprs.Namespace(
-            #                     [exprs.Assignment('a', exprs.Literal(builtins_.Int.for_value(1)))]),
-            #             ),
-            #             (
-            #                 r'def f(a,b) {}',
-            #                 exprs.Namespace([
-            #                     exprs.Assignment(
-            #                         'f',
-            #                         exprs.Literal(
-            #                             func.Func(
-            #                                 'f',
-            #                                 params.Params(
-            #                                     [params.Param('a'), params.Param('b')]),
-            #                                 [],
-            #                             )
-            #                         )
-            #                     ),
-            #                 ]),
-            #             ),
-            #             (
-            #                 'return;',
-            #                 exprs.Namespace([func.Return(None)]),
-            #             ),
-            #             (
-            #                 'return a;',
-            #                 exprs.Namespace([func.Return(exprs.Ref('a'))]),
-            #             ),
-            #             (
-            #                 'f(1,2);',
-            #                 exprs.Namespace([
-            #                     exprs.Path(
-            #                         exprs.Ref('f'),
-            #                         [
-            #                             exprs.Path.Call(exprs.Args([
-            #                                 exprs.Arg(exprs.Literal(
-            #                                     builtins_.Int.for_value(1))),
-            #                                 exprs.Arg(exprs.Literal(
-            #                                     builtins_.Int.for_value(2))),
-            #                             ]))
-            #                         ]
-            #                     )
-            #                 ])
-            #             ),
-            #             (
-            #                 '1 + 2;',
-            #                 exprs.Namespace([
-            #                     exprs.Path(
-            #                         exprs.Literal(builtins_.Int.for_value(1)),
-            #                         [
-            #                             exprs.Path.Member('__add__'),
-            #                             exprs.Path.Call(exprs.Args([
-            #                                 exprs.Arg(exprs.Literal(
-            #                                     builtins_.Int.for_value(2))),
-            #                             ]))
-            #                         ]
-            #                     )
-            #                 ])
-            #             ),
-            #             (
-            #                 '1 - 2;',
-            #                 exprs.Namespace([
-            #                     exprs.Path(
-            #                         exprs.Literal(builtins_.Int.for_value(1)),
-            #                         [
-            #                             exprs.Path.Member('__sub__'),
-            #                             exprs.Path.Call(exprs.Args([
-            #                                 exprs.Arg(exprs.Literal(
-            #                                     builtins_.Int.for_value(2))),
-            #                             ]))
-            #                         ]
-            #                     )
-            #                 ])
-            #             ),
-            #             (
-            #                 '1 * 2;',
-            #                 exprs.Namespace([
-            #                     exprs.Path(
-            #                         exprs.Literal(builtins_.Int.for_value(1)),
-            #                         [
-            #                             exprs.Path.Member('__mul__'),
-            #                             exprs.Path.Call(exprs.Args([
-            #                                 exprs.Arg(exprs.Literal(
-            #                                     builtins_.Int.for_value(2))),
-            #                             ]))
-            #                         ]
-            #                     )
-            #                 ])
-            #             ),
-            #             (
-            #                 '1 / 2;',
-            #                 exprs.Namespace([
-            #                     exprs.Path(
-            #                         exprs.Literal(builtins_.Int.for_value(1)),
-            #                         [
-            #                             exprs.Path.Member('__div__'),
-            #                             exprs.Path.Call(exprs.Args([
-            #                                 exprs.Arg(exprs.Literal(
-            #                                     builtins_.Int.for_value(2))),
-            #                             ]))
-            #                         ]
-            #                     )
-            #                 ])
-            #             ),
-            #             (
-            #                 'class c { a; }',
-            #                 exprs.Namespace([
-            #                     exprs.Assignment(
-            #                         'c',
-            #                         exprs.Class(
-            #                             'c',
-            #                             [
-            #                                 exprs.Ref('a'),
-            #                             ]
-            #                         )
-            #                     ),
-            #                 ])
-            #             ),
+            (
+                'a + b;',
+                statements.Block([
+                    statements.ExprStatement(
+                        exprs.BinaryOperation(
+                            exprs.BinaryOperation.Operator.ADD,
+                            exprs.Ref('a'),
+                            exprs.Ref('b'),
+                        )
+                    ),
+                ])
+            ),
+            (
+                'a - b;',
+                statements.Block([
+                    statements.ExprStatement(
+                        exprs.BinaryOperation(
+                            exprs.BinaryOperation.Operator.SUB,
+                            exprs.Ref('a'),
+                            exprs.Ref('b'),
+                        )
+                    ),
+                ])
+            ),
+            (
+                'a * b;',
+                statements.Block([
+                    statements.ExprStatement(
+                        exprs.BinaryOperation(
+                            exprs.BinaryOperation.Operator.MUL,
+                            exprs.Ref('a'),
+                            exprs.Ref('b'),
+                        )
+                    ),
+                ])
+            ),
+            (
+                'a / b;',
+                statements.Block([
+                    statements.ExprStatement(
+                        exprs.BinaryOperation(
+                            exprs.BinaryOperation.Operator.DIV,
+                            exprs.Ref('a'),
+                            exprs.Ref('b'),
+                        )
+                    ),
+                ])
+            ),
         ]):
             with self.subTest(input_str=input_str, expected_block=expected_block):
                 actual_block = loader.load(input_str)
