@@ -2,6 +2,7 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from enum import Enum
 from typing import Iterable, Iterator, Sequence, Sized
 from pype import errors, vals
 
@@ -113,3 +114,31 @@ class Path(Expr):
         for part in self.parts:
             object_ = part.eval(scope, object_)
         return object_
+
+
+@dataclass(frozen=True)
+class BinaryOperation(Expr):
+    '''binary operation'''
+
+    class Operator(Enum):
+        ADD = '+'
+        SUB = '-'
+        MUL = '*'
+        DIV = '/'
+
+    operator: Operator
+    lhs: Expr
+    rhs: Expr
+
+    def __str__(self) -> str:
+        return f'{self.lhs} {self.operator.value} {self.rhs}'
+
+    @staticmethod
+    def _func_for_operator(operator: 'BinaryOperation.Operator') -> str:
+        return f'__{operator.name.lower()}__'
+
+    def eval(self, scope: vals.Scope) -> vals.Val:
+        lhs = self.lhs.eval(scope)
+        rhs = self.rhs.eval(scope)
+        func = lhs[self._func_for_operator(self.operator)]
+        return func.apply(scope, vals.Args([vals.Arg(rhs)]))
