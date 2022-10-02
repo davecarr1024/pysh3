@@ -99,8 +99,8 @@ def load(input_str: str) -> statements.Block:
     return load_block(loader.load_parser(r'''
         _ws = "\w+";
         id = "[_a-zA-Z][_a-zA-Z0-9]*";
-        int = "[1-9][0-9]*";
         float = "[0-9]+\.[0-9]+";
+        int = "[1-9][0-9]*";
 
         root => block;
         block => statement+;
