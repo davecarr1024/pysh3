@@ -176,6 +176,14 @@ class TestLoader(unittest.TestCase):
                     ),
                 ])
             ),
+            (
+                '3.14',
+                statements.Block([
+                    statements.ExprStatement(
+                        exprs.Literal(builtins_.Float.for_value(3.14))
+                    ),
+                ])
+            ),
         ]):
             with self.subTest(input_str=input_str, expected_block=expected_block):
                 actual_block = loader.load(input_str)

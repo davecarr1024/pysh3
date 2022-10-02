@@ -34,8 +34,12 @@ def load(input_str: str) -> statements.Block:
                 def load_int_literal(result: parser.Result) -> vals.Val:
                     return builtins_.Int.for_value(int(loader.get_token_value(result)))
 
+                def load_float_literal(result: parser.Result) -> vals.Val:
+                    return builtins_.Float.for_value(float(loader.get_token_value(result)))
+
                 return exprs.Literal(loader.factory({
-                    'int_literal': load_int_literal
+                    'int_literal': load_int_literal,
+                    'float_literal': load_float_literal,
                 })(result))
 
             def load_binary_operation(result: parser.Result) -> exprs.BinaryOperation:
@@ -96,6 +100,7 @@ def load(input_str: str) -> statements.Block:
         _ws = "\w+";
         id = "[_a-zA-Z][_a-zA-Z0-9]*";
         int = "[1-9][0-9]*";
+        float = "[0-9]+\.[0-9]+";
 
         root => block;
         block => statement+;
@@ -113,8 +118,9 @@ def load(input_str: str) -> statements.Block:
         assignment => assignment_name "=" assignment_value ";";
         assignment_name => id;
         assignment_value => expr;
-        literal => int_literal;
+        literal => int_literal | float_literal;
         int_literal => int;
+        float_literal => float;
         func_decl => "def" func_name func_params "{" func_body "}";
         func_name => id;
         func_params => params;
