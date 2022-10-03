@@ -3,6 +3,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import (
+    Any,
     Iterable,
     Iterator,
     Mapping,
@@ -155,11 +156,6 @@ class Scope(MutableMapping[str, Val]):
         '''bind this scope to the given object'''
         self._vals.update(self.bind_vals(object_))
 
-    @staticmethod
-    def default() -> 'Scope':
-        '''default scope'''
-        return Scope()
-
 
 @dataclass(frozen=True)
 class Namespace(Val):
@@ -190,9 +186,14 @@ class AbstractClass(Val, ABC):
     def _object_type(self) -> Type['Object']:
         return Object
 
-    def apply(self, scope: Scope, args: Args) -> 'Object':
-        object_ = self._object_type(self, self.members.as_child())
+    def instantiate(self, *args: Any, **kwargs: Any) -> 'Object':
+        object_ = self._object_type(
+            self, self.members.as_child(), *args, **kwargs)
         object_.bind_self()
+        return object_
+
+    def apply(self, scope: Scope, args: Args) -> 'Object':
+        object_ = self.instantiate()
         if '__init__' in object_:
             object_['__init__'].apply(scope, args)
         return object_

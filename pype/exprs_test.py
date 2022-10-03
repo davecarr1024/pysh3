@@ -12,7 +12,7 @@ if 'unittest.util' in __import__('sys').modules:
 
 
 def _int(value: int) -> vals.Val:
-    return builtins_.Int.for_value(value)
+    return builtins_.int_(value)
 
 
 def _int_literal(value: int) -> exprs.Literal:
@@ -97,8 +97,8 @@ class TestBinaryOperation(unittest.TestCase):
         self.assertEqual(
             exprs.BinaryOperation(
                 exprs.BinaryOperation.Operator.DIV,
-                _int_literal(1),
-                _int_literal(2),
+                _int_literal(10),
+                _int_literal(5),
             ).eval(vals.Scope()),
-            builtins_.Float.for_value(0.5)
+            builtins_.int_(2)
         )

@@ -20,7 +20,7 @@ class FuncTest(unittest.TestCase):
                     statements.Block([
                         statements.Assignment(
                             'a',
-                            exprs.Literal(builtins_.Int.for_value(1)),
+                            exprs.Literal(builtins_.int_(1)),
                         ),
                     ]),
                 ),
@@ -33,12 +33,12 @@ class FuncTest(unittest.TestCase):
                     params.Params([]),
                     statements.Block([
                         statements.Return(
-                            exprs.Literal(builtins_.Int.for_value(1))
+                            exprs.Literal(builtins_.int_(1))
                         ),
                     ]),
                 ),
                 vals.Args([]),
-                builtins_.Int.for_value(1),
+                builtins_.int_(1),
             ),
             (
                 func.Func(
@@ -53,9 +53,9 @@ class FuncTest(unittest.TestCase):
                     ]),
                 ),
                 vals.Args([
-                    vals.Arg(builtins_.Int.for_value(1)),
+                    vals.Arg(builtins_.int_(1)),
                 ]),
-                builtins_.Int.for_value(1),
+                builtins_.int_(1),
             ),
         ]):
             with self.subTest(func_=func_, args=args, expected_result=expected_result):
@@ -71,7 +71,7 @@ class FuncTest(unittest.TestCase):
                     statements.Block([]),
                 ),
                 vals.Args([
-                    vals.Arg(builtins_.Int.for_value(1)),
+                    vals.Arg(builtins_.int_(1)),
                 ])
             ),
             (

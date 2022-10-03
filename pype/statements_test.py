@@ -17,11 +17,11 @@ class BlockTest(unittest.TestCase):
         self.assertEqual(
             statements.Block([
                 statements.Assignment('a', exprs.Literal(
-                    builtins_.Int.for_value(1))),
+                    builtins_.int_(1))),
             ]).eval(scope),
             statements.Result()
         )
-        self.assertEqual(scope['a'], builtins_.Int.for_value(1))
+        self.assertEqual(scope['a'], builtins_.int_(1))
 
     def test_eval_return(self):
         scope = vals.Scope()
@@ -29,7 +29,7 @@ class BlockTest(unittest.TestCase):
             statements.Block([
                 statements.Return(None),
                 statements.Assignment('a', exprs.Literal(
-                    builtins_.Int.for_value(1))),
+                    builtins_.int_(1))),
             ]).eval(scope),
             statements.Result(return_=statements.Result.Return(None))
         )
@@ -39,12 +39,13 @@ class BlockTest(unittest.TestCase):
         scope = vals.Scope()
         self.assertEqual(
             statements.Block([
-                statements.Return(exprs.Literal(builtins_.Int.for_value(1))),
+                statements.Return(exprs.Literal(
+                    builtins_.int_(1))),
                 statements.Assignment('a', exprs.Literal(
-                    builtins_.Int.for_value(2))),
+                    builtins_.int_(2))),
             ]).eval(scope),
             statements.Result(return_=statements.Result.Return(
-                builtins_.Int.for_value(1)))
+                builtins_.int_(1)))
         )
         self.assertNotIn('a', scope)
 
@@ -54,17 +55,17 @@ class AssignmentTest(unittest.TestCase):
         scope = vals.Scope()
         self.assertEqual(
             statements.Assignment('a', exprs.Literal(
-                builtins_.Int.for_value(1))).eval(scope),
+                builtins_.int_(1))).eval(scope),
             statements.Result()
         )
-        self.assertEqual(scope['a'], builtins_.Int.for_value(1))
+        self.assertEqual(scope['a'], builtins_.int_(1))
 
 
 class ExprStatementTest(unittest.TestCase):
     def test_eval(self):
         self.assertEqual(
             statements.ExprStatement(
-                exprs.Literal(builtins_.Int.for_value(1))).eval(vals.Scope()),
+                exprs.Literal(builtins_.int_(1))).eval(vals.Scope()),
             statements.Result()
         )
 
@@ -79,9 +80,9 @@ class ReturnTest(unittest.TestCase):
     def test_eval_val(self):
         self.assertEqual(
             statements.Return(exprs.Literal(
-                builtins_.Int.for_value(1))).eval(vals.Scope()),
+                builtins_.int_(1))).eval(vals.Scope()),
             statements.Result(return_=statements.Result.Return(
-                builtins_.Int.for_value(1)))
+                builtins_.int_(1)))
         )
 
 
@@ -93,7 +94,7 @@ class ClassTest(unittest.TestCase):
                 'c',
                 statements.Block([
                     statements.Assignment('a', exprs.Literal(
-                        builtins_.Int.for_value(1))),
+                        builtins_.int_(1))),
                 ])
             ).eval(scope),
             statements.Result()
@@ -103,7 +104,7 @@ class ClassTest(unittest.TestCase):
             vals.Class(
                 'c',
                 vals.Scope({
-                    'a': builtins_.Int.for_value(1),
+                    'a': builtins_.int_(1),
                 })
             )
         )
@@ -116,7 +117,7 @@ class NamespaceTest(unittest.TestCase):
             statements.Namespace(
                 statements.Block([
                     statements.Assignment('a', exprs.Literal(
-                        builtins_.Int.for_value(1))),
+                        builtins_.int_(1))),
                 ]),
                 _name='n',
             ).eval(scope),
@@ -126,7 +127,7 @@ class NamespaceTest(unittest.TestCase):
             scope['n'],
             vals.Namespace(
                 vals.Scope({
-                    'a': builtins_.Int.for_value(1),
+                    'a': builtins_.int_(1),
                 }),
                 name='n',
             )

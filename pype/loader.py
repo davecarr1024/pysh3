@@ -5,6 +5,14 @@ from core import loader, parser
 from pype import builtins_, exprs, func, params, statements, vals
 
 
+def default_scope() -> vals.Scope:
+    return vals.Scope({
+        'true': builtins_.true,
+        'false': builtins_.false,
+        'none': builtins_.none,
+    })
+
+
 def load(input_str: str) -> statements.Block:
     '''load from a string'''
 
@@ -32,13 +40,13 @@ def load(input_str: str) -> statements.Block:
 
             def load_literal(result: parser.Result) -> exprs.Literal:
                 def load_int_literal(result: parser.Result) -> vals.Val:
-                    return builtins_.Int.for_value(int(loader.get_token_value(result)))
+                    return builtins_.int_(int(loader.get_token_value(result)))
 
                 def load_float_literal(result: parser.Result) -> vals.Val:
-                    return builtins_.Float.for_value(float(loader.get_token_value(result)))
+                    return builtins_.float_(float(loader.get_token_value(result)))
 
                 def load_str_literal(reslut: parser.Result) -> vals.Val:
-                    return builtins_.Str.for_value(loader.get_token_value(result)[1:-1])
+                    return builtins_.str_(loader.get_token_value(result)[1:-1])
 
                 return exprs.Literal(loader.factory({
                     'int_literal': load_int_literal,
@@ -146,7 +154,7 @@ def load(input_str: str) -> statements.Block:
 def eval_(input_str: str, scope: Optional[vals.Scope] = None) -> vals.Val:
     '''eval a set of statements and return the value of the last one'''
     if scope is None:
-        scope = vals.Scope.default()
+        scope = default_scope()
     statements_ = list(load(input_str))
     for statement in statements_[:-1]:
         statement.eval(scope)
@@ -157,7 +165,7 @@ def eval_(input_str: str, scope: Optional[vals.Scope] = None) -> vals.Val:
 
 
 if __name__ == '__main__':
-    scope = vals.Scope.default()
+    scope = default_scope()
     while True:
         try:
             result = eval_(input('>'), scope)

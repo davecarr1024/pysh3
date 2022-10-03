@@ -35,12 +35,12 @@ class ParamsTest(unittest.TestCase):
                 params.Param('a'),
                 params.Param('b'),
             ]).bind(vals.Scope(), vals.Args([
-                vals.Arg(builtins_.Int.for_value(1)),
-                vals.Arg(builtins_.Int.for_value(2)),
+                vals.Arg(builtins_.int_(1)),
+                vals.Arg(builtins_.int_(2)),
             ])),
             vals.Scope({
-                'a': builtins_.Int.for_value(1),
-                'b': builtins_.Int.for_value(2),
+                'a': builtins_.int_(1),
+                'b': builtins_.int_(2),
             })
         )
 
