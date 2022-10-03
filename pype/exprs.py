@@ -125,6 +125,8 @@ class BinaryOperation(Expr):
         SUB = '-'
         MUL = '*'
         DIV = '/'
+        AND = 'and'
+        OR = 'or'
 
     operator: Operator
     lhs: Expr

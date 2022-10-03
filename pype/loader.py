@@ -144,7 +144,7 @@ def load(input_str: str) -> statements.Block:
         return_statement => "return" return_value? ";";
         return_value => expr;
         binary_operation => operand binary_operator operand;
-        binary_operator => "+" | "-" | "*" | "/";
+        binary_operator => "+" | "-" | "*" | "/" | "and" | "or";
         class_decl => "class" class_name "{" class_body "}";
         class_name => id;
         class_body => block;

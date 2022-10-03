@@ -192,6 +192,30 @@ class TestLoader(unittest.TestCase):
                     ),
                 ])
             ),
+            (
+                'a and b;',
+                statements.Block([
+                    statements.ExprStatement(
+                        exprs.BinaryOperation(
+                            exprs.BinaryOperation.Operator.AND,
+                            exprs.Ref('a'),
+                            exprs.Ref('b'),
+                        )
+                    ),
+                ])
+            ),
+            (
+                'a or b;',
+                statements.Block([
+                    statements.ExprStatement(
+                        exprs.BinaryOperation(
+                            exprs.BinaryOperation.Operator.OR,
+                            exprs.Ref('a'),
+                            exprs.Ref('b'),
+                        )
+                    ),
+                ])
+            ),
         ]):
             with self.subTest(input_str=input_str, expected_block=expected_block):
                 actual_block = loader.load(input_str)
@@ -224,6 +248,22 @@ class TestLoader(unittest.TestCase):
             (
                 'class c { a = 1; } c().a;',
                 builtins_.int_(1)
+            ),
+            (
+                'true;',
+                builtins_.bool_(True),
+            ),
+            (
+                'false;',
+                builtins_.bool_(False),
+            ),
+            (
+                'true and false;',
+                builtins_.bool_(False),
+            ),
+            (
+                'true or false;',
+                builtins_.bool_(True),
             ),
         ]):
             with self.subTest(input_str=input_str, expected_result=expected_result):
